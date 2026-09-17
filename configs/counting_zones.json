@@ -1,0 +1,21 @@
+{
+  "_comment": "Định nghĩa line/zone đếm cho từng video test. Toạ độ tính theo pixel gốc của video (chưa resize).",
+
+  "nga_tu_01": {
+    "video_resolution": [1920, 1080],
+    "lines": [
+      {
+        "name": "north_south",
+        "direction": "vertical",
+        "points": [[960, 300], [960, 780]],
+        "count_direction": "both"
+      },
+      {
+        "name": "east_west",
+        "direction": "horizontal",
+        "points": [[300, 540], [1620, 540]],
+        "count_direction": "both"
+      }
+    ]
+  }
+}

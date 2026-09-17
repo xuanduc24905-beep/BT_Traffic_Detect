@@ -1,0 +1,30 @@
+# Data — không commit
+data/raw/
+data/merged/
+data/test_videos/raw/
+data/test_videos/frames/
+
+# Weights lớn
+weights/*.pt
+weights/*.onnx
+!weights/.gitkeep
+
+# Training outputs
+runs/
+logs/*.log
+results/videos/*.mp4
+results/videos/*.avi
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ipynb_checkpoints/
+*.egg-info/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp

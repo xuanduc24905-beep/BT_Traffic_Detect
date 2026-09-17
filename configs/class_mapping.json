@@ -1,0 +1,32 @@
+{
+  "_comment": "Ánh xạ class-id gốc -> tên lớp chuẩn. null = bỏ. Sửa lại theo thứ tự lớp thực tế của mỗi dataset gốc.",
+  "_canonical_classes": ["motorcycle", "car", "bus", "truck", "bicycle"],
+
+  "ua_detrac": {
+    "0": "car",
+    "1": "bus",
+    "2": "truck",
+    "3": null
+  },
+
+  "roboflow_vn": {
+    "0": "motorcycle",
+    "1": "car",
+    "2": "bus",
+    "3": "truck",
+    "4": "bicycle"
+  },
+
+  "visdrone": {
+    "0": null,
+    "1": null,
+    "2": "bicycle",
+    "3": "car",
+    "4": "car",
+    "5": "truck",
+    "6": null,
+    "7": null,
+    "8": "bus",
+    "9": "motorcycle"
+  }
+}

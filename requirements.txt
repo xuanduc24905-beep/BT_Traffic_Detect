@@ -1,0 +1,27 @@
+# VN Traffic AI — dependencies
+# Cài torch trước theo CUDA phù hợp:
+#   pip install --index-url https://download.pytorch.org/whl/cu124 torch==2.5.1 torchvision==0.20.1
+
+# --- Detection ---
+ultralytics>=8.4.0
+opencv-python>=4.9.0
+albumentations>=1.4.0
+
+# --- Tracking (ByteTrack/BoT-SORT built-in Ultralytics, cần lap cho hungarian) ---
+lap>=0.5.12
+filterpy>=1.4.5
+scipy>=1.13.0
+
+# --- Stats & Viz ---
+pandas>=2.0.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# --- Data prep ---
+numpy>=1.26,<2.3
+pyyaml>=6.0
+tqdm>=4.66.0
+
+# --- Dev / test ---
+pytest>=8.0.0
+jupyter>=1.0.0
