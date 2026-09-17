@@ -2,6 +2,7 @@
   "_comment": "Ánh xạ class-id gốc -> tên lớp chuẩn. null = bỏ. Sửa lại theo thứ tự lớp thực tế của mỗi dataset gốc.",
   "_canonical_classes": ["motorcycle", "car", "bus", "truck", "bicycle"],
 
+  "_ua_detrac_note": "DETRAC gốc: 0=car, 1=bus, 2=van, 3=others. Van map thành truck vì hình dáng gần nhất trong 5 lớp chuẩn.",
   "ua_detrac": {
     "0": "car",
     "1": "bus",
