@@ -19,16 +19,13 @@ from src.tracking.track import track_stream
 from src.tracking.counter import Counter, load_lines
 
 
-CLASS_NAMES = ["motorcycle", "car", "bus", "truck", "bicycle"]
-
-
-def draw_overlay(frame, boxes_xyxy, ids, classes, lines, counts):
+def draw_overlay(frame, boxes_xyxy, ids, classes, lines, counts, class_names):
     for xyxy, tid, cls in zip(boxes_xyxy, ids, classes):
         if tid is None:
             continue
         x1, y1, x2, y2 = map(int, xyxy)
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        label = f"{CLASS_NAMES[int(cls)]}#{int(tid)}"
+        label = f"{class_names[int(cls)]}#{int(tid)}"
         cv2.putText(frame, label, (x1, max(0, y1 - 6)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
@@ -77,10 +74,14 @@ def main():
 
     events = []
     prev_counts_snapshot = {ln.name: dict() for ln in lines}
+    class_names = None  # sẽ nạp từ result đầu tiên
 
     for frame_idx, res in enumerate(track_stream(
             args.weights, args.video, tracker=args.tracker,
             conf=args.conf, iou=args.iou, imgsz=args.imgsz)):
+
+        if class_names is None:
+            class_names = res.names  # {0: 'car', 1: 'bus', ...}
 
         if res.boxes.id is None:
             frame = res.orig_img.copy() if writer else None
@@ -96,18 +97,19 @@ def main():
                 prev = prev_counts_snapshot[ln_name]
                 for cls_id, cnt in per_cls.items():
                     delta = cnt - prev.get(cls_id, 0)
-                    if delta > 0:
+                    for _ in range(delta):
                         events.append({
                             "frame": frame_idx,
                             "time_sec": round(frame_idx / fps, 3),
                             "line": ln_name,
                             "track_id": -1,  # aggregate; ID cụ thể trong counter
-                            "class_name": CLASS_NAMES[int(cls_id)],
+                            "class_name": class_names[int(cls_id)],
                         })
                 prev_counts_snapshot[ln_name] = dict(per_cls)
 
             if writer is not None:
-                frame = draw_overlay(frame, boxes, ids, classes, lines, counter.counts)
+                frame = draw_overlay(frame, boxes, ids, classes, lines,
+                                     counter.counts, class_names)
 
         if writer is not None and frame is not None:
             writer.write(frame)

@@ -1,0 +1,20 @@
+{
+  "video": "demo_traffic.mp4",
+  "resolution": [
+    1764,
+    948
+  ],
+  "fps": 30.0,
+  "duration_sec": 5.9,
+  "_instructions": "Xem video và điền tay số lượt vào counts_by_class.",
+  "counts_by_class": {
+    "car": 80,
+    "bus": 1,
+    "van": 6,
+    "truck": 0,
+    "motorcycle": 0,
+    "bicycle": 0
+  },
+  "counts_by_line": {},
+  "_note": "GT ước lượng cho smoke test — thực tế phải đếm tay từ video demo_traffic.mp4"
+}

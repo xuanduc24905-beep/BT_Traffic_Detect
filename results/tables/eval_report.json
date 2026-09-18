@@ -1,0 +1,45 @@
+{
+  "per_class": {
+    "bicycle": {
+      "pred": 0,
+      "gt": 0,
+      "abs_err": 0,
+      "accuracy": 1.0
+    },
+    "bus": {
+      "pred": 1,
+      "gt": 1,
+      "abs_err": 0,
+      "accuracy": 1.0
+    },
+    "car": {
+      "pred": 86,
+      "gt": 80,
+      "abs_err": 6,
+      "accuracy": 0.925
+    },
+    "motorcycle": {
+      "pred": 0,
+      "gt": 0,
+      "abs_err": 0,
+      "accuracy": 1.0
+    },
+    "truck": {
+      "pred": 0,
+      "gt": 0,
+      "abs_err": 0,
+      "accuracy": 1.0
+    },
+    "van": {
+      "pred": 5,
+      "gt": 6,
+      "abs_err": 1,
+      "accuracy": 0.8333333333333334
+    }
+  },
+  "total_pred": 92,
+  "total_gt": 87,
+  "MAE": 1.1666666666666667,
+  "MAPE_percent": 8.055555555555555,
+  "overall_accuracy": 0.9425287356321839
+}

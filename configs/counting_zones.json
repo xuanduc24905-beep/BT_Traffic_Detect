@@ -1,6 +1,18 @@
 {
   "_comment": "Định nghĩa line/zone đếm cho từng video test. Toạ độ tính theo pixel gốc của video (chưa resize).",
 
+  "demo_traffic": {
+    "video_resolution": [1764, 948],
+    "lines": [
+      {
+        "name": "middle_horizontal",
+        "direction": "horizontal",
+        "points": [[100, 474], [1664, 474]],
+        "count_direction": "both"
+      }
+    ]
+  },
+
   "nga_tu_01": {
     "video_resolution": [1920, 1080],
     "lines": [
