@@ -18,7 +18,10 @@ sys.path.insert(0, str(ROOT))
 
 from src.pipeline.run import run_pipeline
 from src.tracking.counter import Line
-from src.stats.aggregator import events_to_df, summarize, counts_per_minute
+from src.stats.aggregator import (
+    events_to_df, summarize, counts_per_bucket, flow_rate, peak_period,
+    cumulative_counts, format_bucket_label,
+)
 from src.evaluation.metrics import report as eval_report
 
 
@@ -148,35 +151,114 @@ with tab_stats:
             df_enriched = events_to_df(df.to_dict("records"))
             summ = summarize(df_enriched)
 
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Tổng lượt qua line", summ["total"])
-            col2.metric("Số loại xe", len(summ["per_class"]))
-            col3.metric("Loại nhiều nhất",
-                        max(summ["per_class"], key=summ["per_class"].get))
+            # --- Bucket selector ---
+            BUCKETS = {"30 giây": 30, "1 phút": 60, "5 phút": 300,
+                       "15 phút": 900, "30 phút": 1800, "1 giờ": 3600}
+            bucket_choice = st.selectbox("Chia thời gian theo",
+                                         list(BUCKETS.keys()),
+                                         index=1)
+            bucket_sec = BUCKETS[bucket_choice]
+            pivot = counts_per_bucket(df_enriched, bucket_sec)
 
-            st.markdown("#### Số lượng theo loại xe")
+            # --- Metrics tổng thể ---
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Tổng lượt", summ["total"])
+            c2.metric("Số loại xe", len(summ["per_class"]))
+            c3.metric("Loại nhiều nhất",
+                      max(summ["per_class"], key=summ["per_class"].get))
+            c4.metric("Thời lượng (s)", f"{summ['duration_sec']:.1f}")
+
+            # --- Flow rate ---
+            st.markdown("#### 🚗 Tốc độ lưu lượng")
+            fr_min = flow_rate(df_enriched, unit="minute")
+            fr_hour = flow_rate(df_enriched, unit="hour")
+            fc1, fc2 = st.columns(2)
+            fc1.metric("Tổng xe/phút", fr_min.get("total", 0))
+            fc2.metric("Tổng xe/giờ", fr_hour.get("total", 0))
+
+            if fr_hour.get("per_class"):
+                fr_df = pd.DataFrame([
+                    {"class": k, "xe/phút": fr_min["per_class"].get(k, 0),
+                     "xe/giờ": fr_hour["per_class"].get(k, 0)}
+                    for k in fr_hour["per_class"]
+                ])
+                st.dataframe(fr_df, use_container_width=True)
+
+            # --- Peak period ---
+            peak = peak_period(df_enriched, bucket_sec)
+            if peak:
+                st.markdown("#### 📈 Khung giờ cao điểm")
+                pc1, pc2, pc3 = st.columns(3)
+                pc1.metric(f"Bucket cao điểm ({bucket_choice})",
+                           f"#{peak['peak_bucket']}")
+                pc2.metric("Từ giây",
+                           f"{peak['peak_start_sec']}–{peak['peak_end_sec']}")
+                pc3.metric("Số lượt trong bucket", peak["peak_total"])
+
+            # --- Chart theo bucket ---
+            st.markdown(f"#### 📊 Lưu lượng theo {bucket_choice}")
+            if pivot.empty:
+                st.caption(f"Video quá ngắn để chia theo {bucket_choice}.")
+            else:
+                chart_kind = st.radio("Kiểu biểu đồ",
+                                      ["Line", "Bar chồng"], horizontal=True)
+                if chart_kind == "Line":
+                    st.line_chart(pivot)
+                else:
+                    st.bar_chart(pivot)
+
+            # --- Heatmap ---
+            st.markdown("#### 🔥 Heatmap thời gian × loại xe")
+            if not pivot.empty:
+                # Streamlit dùng dataframe styling để hiển thị màu
+                st.dataframe(
+                    pivot.style.background_gradient(cmap="YlOrRd", axis=None),
+                    use_container_width=True,
+                )
+
+            # --- Cumulative ---
+            st.markdown("#### 📈 Đếm tích luỹ theo thời gian")
+            cum = cumulative_counts(df_enriched)
+            if not cum.empty:
+                st.line_chart(cum)
+
+            # --- Per class ---
+            st.markdown("#### 🚦 Số lượng theo loại xe (tổng)")
             counts_df = pd.DataFrame(
                 {"class_name": list(summ["per_class"].keys()),
                  "count": list(summ["per_class"].values())}
             ).sort_values("count", ascending=False)
             st.bar_chart(counts_df.set_index("class_name"))
 
-            st.markdown("#### Lưu lượng theo phút")
-            per_min = counts_per_minute(df_enriched)
-            if per_min.empty:
-                st.caption("Video quá ngắn để chia theo phút.")
-            else:
-                st.line_chart(per_min)
+            # --- Per line ---
+            if len(summ["per_line"]) > 1:
+                st.markdown("#### 🛣 So sánh lưu lượng giữa các line")
+                line_df = pd.DataFrame(
+                    {"line": list(summ["per_line"].keys()),
+                     "count": list(summ["per_line"].values())}
+                )
+                st.bar_chart(line_df.set_index("line"))
 
-            st.markdown("#### Event log")
-            st.dataframe(df_enriched, use_container_width=True, height=300)
+            # --- Event log ---
+            st.markdown("#### 📋 Event log")
+            st.dataframe(df_enriched, use_container_width=True, height=250)
 
-            st.download_button("Download events CSV",
-                               df.to_csv(index=False).encode("utf-8-sig"),
-                               file_name="events.csv")
-            st.download_button("Download summary CSV",
-                               counts_df.to_csv(index=False).encode("utf-8-sig"),
-                               file_name="summary.csv")
+            # --- Downloads ---
+            dc1, dc2, dc3 = st.columns(3)
+            with dc1:
+                st.download_button("Events CSV",
+                                   df.to_csv(index=False).encode("utf-8-sig"),
+                                   file_name="events.csv")
+            with dc2:
+                st.download_button("Summary CSV",
+                                   counts_df.to_csv(index=False).encode("utf-8-sig"),
+                                   file_name="summary.csv")
+            with dc3:
+                if not pivot.empty:
+                    st.download_button(
+                        f"Bucket {bucket_choice} CSV",
+                        pivot.to_csv().encode("utf-8-sig"),
+                        file_name=f"bucket_{bucket_sec}s.csv")
 
 # ---------- Tab 3: Eval ----------
 with tab_eval:
