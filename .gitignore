@@ -14,11 +14,15 @@ weights/*.onnx
 /yolo*.pt
 /yolo*.onnx
 
-# Training outputs
+# Training outputs (nếu muốn commit chart quan trọng, dùng `git add -f`)
 runs/
 logs/*.log
 results/videos/*.mp4
 results/videos/*.avi
+
+# Word/Office lock files
+~$*
+*.tmp
 # CSV events lớn, tạm thời
 results/tables/streamlit_*.csv
 results/tables/compare_*.csv
