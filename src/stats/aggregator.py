@@ -28,11 +28,14 @@ def events_to_df(events) -> pd.DataFrame:
 
 
 def summarize(df: pd.DataFrame) -> dict:
-    """Tóm tắt tổng thể + per-class + per-line."""
+    """Tóm tắt tổng thể + per-class + per-line + per-direction."""
     if df.empty:
         return {"total": 0, "per_class": {}, "per_line": {},
-                "per_class_per_line": {}, "duration_sec": 0}
-    return {
+                "per_direction": {},
+                "per_class_per_line": {},
+                "per_class_per_direction": {},
+                "duration_sec": 0}
+    out = {
         "total": len(df),
         "per_class": df["class_name"].value_counts().to_dict(),
         "per_line": df["line"].value_counts().to_dict(),
@@ -40,6 +43,24 @@ def summarize(df: pd.DataFrame) -> dict:
                                .unstack(fill_value=0).to_dict("index")),
         "duration_sec": float(df["time_sec"].max()) if len(df) else 0.0,
     }
+    if "direction" in df.columns:
+        out["per_direction"] = df["direction"].value_counts().to_dict()
+        out["per_class_per_direction"] = (
+            df.groupby(["direction", "class_name"]).size()
+              .unstack(fill_value=0).to_dict("index"))
+    else:
+        out["per_direction"] = {}
+        out["per_class_per_direction"] = {}
+    return out
+
+
+def counts_by_direction(df: pd.DataFrame) -> pd.DataFrame:
+    """Bảng {line × direction} → tổng số lượt. Rỗng nếu không có cột direction."""
+    if df.empty or "direction" not in df.columns:
+        return pd.DataFrame()
+    return (df.groupby(["line", "direction"]).size()
+              .unstack(fill_value=0)
+              .sort_index())
 
 
 def counts_per_bucket(df: pd.DataFrame, bucket_sec: int,

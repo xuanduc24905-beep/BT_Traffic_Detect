@@ -1,15 +1,15 @@
-# Ultralytics YOLO config — 5 lớp phương tiện giao thông VN
-# Sinh sau khi chạy: python scripts/merge_datasets.py
+# Ultralytics YOLO config — 4 lớp phương tiện giao thông VN
+# Schema canonical: {motorcycle, car, bus, truck}
+# Nguồn: UA-DETRAC (car/bus/truck) + Cần Thơ VN (thêm motorcycle)
 
 path: /home/xuand/vn_traffic_ai/data/merged
 train: images/train
 val:   images/val
 test:  images/test
 
-nc: 5
+nc: 4
 names:
   0: motorcycle
   1: car
   2: bus
   3: truck
-  4: bicycle

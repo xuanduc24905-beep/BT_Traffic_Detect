@@ -4,11 +4,12 @@ Chiến lược: KHÔNG copy 60GB ảnh — symlink JPG gốc từ raw/DETRAC-Im
 copy + remap file label .txt (dung lượng nhỏ). Giữ nguyên split train/val/test
 đã có sẵn.
 
-Class remap (DETRAC 4-class → canonical 5-class):
+Class remap (DETRAC 4-class → canonical 4-class):
     0 car    → 1 car
     1 bus    → 2 bus
     2 van    → 3 truck       (van gần truck nhất về hình dáng)
     3 others → null (bỏ)
+Schema canonical 4-class: {0: motorcycle, 1: car, 2: bus, 3: truck} — bỏ bicycle.
 
 Chạy: python scripts/import_ua_detrac.py
 """
@@ -22,7 +23,7 @@ OLD_LABELS = Path("/home/xuand/yolov8_finetune/data/detrac/labels")
 OLD_RAW_IMAGES = Path(
     "/home/xuand/yolov8_finetune/data/raw/ua_detrac/DETRAC-Images/DETRAC-Images"
 )
-CANONICAL = ["motorcycle", "car", "bus", "truck", "bicycle"]
+CANONICAL = ["motorcycle", "car", "bus", "truck"]
 CANON_ID = {name: i for i, name in enumerate(CANONICAL)}
 
 # Regex tách tên: MVI_20011_img00001.txt → ("MVI_20011", "img00001")

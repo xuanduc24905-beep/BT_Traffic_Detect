@@ -20,7 +20,7 @@ from src.pipeline.run import run_pipeline
 from src.tracking.counter import Line
 from src.stats.aggregator import (
     events_to_df, summarize, counts_per_bucket, flow_rate, peak_period,
-    cumulative_counts, format_bucket_label,
+    cumulative_counts, format_bucket_label, counts_by_direction,
 )
 from src.evaluation.metrics import report as eval_report
 
@@ -40,16 +40,26 @@ if not all_weights:
     st.sidebar.error("Không tìm thấy file .pt nào trong weights/ hoặc runs/")
     st.stop()
 
-weights_path = st.sidebar.selectbox("Model weights", all_weights, index=0)
+_preferred = ["weights/baseline_detrac4.pt"]
+_default_idx = next((i for i, w in enumerate(all_weights) if w in _preferred), 0)
+weights_path = st.sidebar.selectbox("Model weights", all_weights, index=_default_idx,
+                                    help="baseline_detrac4.pt là model tốt nhất hiện tại (acc 97.7% trên demo).")
 tracker = st.sidebar.radio("Tracker", ["bytetrack.yaml", "botsort.yaml"])
 conf = st.sidebar.slider("Confidence threshold", 0.1, 0.9, 0.3, 0.05)
 iou = st.sidebar.slider("IoU threshold (NMS)", 0.1, 0.9, 0.5, 0.05)
-imgsz = st.sidebar.selectbox("Image size", [416, 512, 640, 768], index=2)
+imgsz = st.sidebar.selectbox("Image size", [320, 416, 512, 640, 768], index=3,
+                             help="Nhỏ hơn = nhanh hơn, nhưng miss xe nhỏ. 416 thường đủ cho video 1080p.")
+use_half = st.sidebar.checkbox("FP16 inference (nhanh 1.3-1.5×)", value=True,
+                               help="GPU Ada/Ampere/Turing hỗ trợ tốt. Tắt nếu chạy CPU hoặc GPU cũ.")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("**Line đếm**")
 line_y_pct = st.sidebar.slider("Vị trí line (% chiều cao)", 10, 90, 50, 5)
 line_direction = st.sidebar.radio("Hướng line", ["horizontal", "vertical"])
+count_direction = st.sidebar.radio(
+    "Chiều đếm", ["both", "ltr", "rtl"],
+    help="ltr = trái→phải theo chiều vector line (p1→p2); rtl = ngược lại. "
+         "'both' đếm cả hai chiều nhưng vẫn phân biệt trong output.")
 
 # ---------- Main ----------
 st.title("🚦 VN Traffic AI — Đếm và phân loại phương tiện")
@@ -98,10 +108,12 @@ with tab_run:
         # Build line
         if line_direction == "horizontal":
             y = int(h * line_y_pct / 100)
-            line = Line(name="line_1", p1=(50, y), p2=(w - 50, y))
+            line = Line(name="line_1", p1=(50, y), p2=(w - 50, y),
+                        count_direction=count_direction)
         else:
             x = int(w * line_y_pct / 100)
-            line = Line(name="line_1", p1=(x, 50), p2=(x, h - 50))
+            line = Line(name="line_1", p1=(x, 50), p2=(x, h - 50),
+                        count_direction=count_direction)
 
         out_dir = ROOT / "results"
         out_video = out_dir / "videos" / f"streamlit_{Path(st.session_state['tmp_video']).stem}_out.mp4"
@@ -120,7 +132,7 @@ with tab_run:
                 weights=str(ROOT / weights_path),
                 lines=[line],
                 tracker=tracker,
-                conf=conf, iou=iou, imgsz=imgsz,
+                conf=conf, iou=iou, imgsz=imgsz, half=use_half,
                 out_csv=str(out_csv),
                 out_video=str(out_video),
                 progress_cb=_cb,
@@ -229,6 +241,13 @@ with tab_stats:
                  "count": list(summ["per_class"].values())}
             ).sort_values("count", ascending=False)
             st.bar_chart(counts_df.set_index("class_name"))
+
+            # --- Per direction ---
+            dir_df = counts_by_direction(df_enriched)
+            if not dir_df.empty:
+                st.markdown("#### ↔ Lưu lượng theo chiều đi (line × direction)")
+                st.dataframe(dir_df, use_container_width=True)
+                st.bar_chart(dir_df)
 
             # --- Per line ---
             if len(summ["per_line"]) > 1:

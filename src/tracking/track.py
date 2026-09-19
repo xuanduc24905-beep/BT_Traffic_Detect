@@ -9,7 +9,8 @@ from ultralytics import YOLO
 def track_stream(weights: str, source: str,
                  tracker: str = "bytetrack.yaml",
                  conf: float = 0.25, iou: float = 0.5,
-                 imgsz: int = 640, device: str = "0"):
+                 imgsz: int = 640, device: str = "0",
+                 half: bool = False):
     """Yield từng frame result có `.boxes.id` (tracking ID).
 
     result.boxes có các thuộc tính:
@@ -17,6 +18,8 @@ def track_stream(weights: str, source: str,
       - conf: (N,)   — confidence
       - cls:  (N,)   — class id
       - id:   (N,)   — tracking id (có thể None với box vừa xuất hiện)
+
+    half=True bật FP16 inference (~1.3-1.5× nhanh hơn trên GPU Ada/Ampere).
     """
     model = YOLO(weights)
     return model.track(
@@ -24,6 +27,7 @@ def track_stream(weights: str, source: str,
         tracker=tracker,
         conf=conf, iou=iou, imgsz=imgsz,
         device=device,
+        half=half,
         stream=True, persist=True, verbose=False,
     )
 

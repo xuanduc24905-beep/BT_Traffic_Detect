@@ -1,19 +1,28 @@
 # Data — không commit
 data/raw/
 data/merged/
+data/raw_vn_cantho/
 data/test_videos/raw/
 data/test_videos/frames/
+data/*.zip
 
 # Weights lớn
 weights/*.pt
 weights/*.onnx
 !weights/.gitkeep
+# Ultralytics tự download về pwd
+/yolo*.pt
+/yolo*.onnx
 
 # Training outputs
 runs/
 logs/*.log
 results/videos/*.mp4
 results/videos/*.avi
+# CSV events lớn, tạm thời
+results/tables/streamlit_*.csv
+results/tables/compare_*.csv
+results/tables/smoke_*.csv
 
 # Python
 __pycache__/

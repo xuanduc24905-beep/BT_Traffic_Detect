@@ -1,0 +1,106 @@
+{
+  "weights/baseline_detrac4.pt": {
+    "weights": "weights/baseline_detrac4.pt",
+    "counting": [
+      {
+        "video": "data/test_videos/raw/demo_traffic.mp4",
+        "pred": {
+          "car": 84,
+          "others": 1,
+          "bus": 1,
+          "van": 4
+        },
+        "gt": {
+          "car": 80,
+          "bus": 1,
+          "truck": 6
+        },
+        "runtime_sec": 4.26,
+        "report": {
+          "per_class": {
+            "bus": {
+              "pred": 1,
+              "gt": 1,
+              "abs_err": 0,
+              "accuracy": 1.0
+            },
+            "car": {
+              "pred": 84,
+              "gt": 80,
+              "abs_err": 4,
+              "accuracy": 0.95
+            },
+            "others": {
+              "pred": 1,
+              "gt": 0,
+              "abs_err": 1,
+              "accuracy": 0.0
+            },
+            "truck": {
+              "pred": 0,
+              "gt": 6,
+              "abs_err": 6,
+              "accuracy": 0.0
+            },
+            "van": {
+              "pred": 4,
+              "gt": 0,
+              "abs_err": 4,
+              "accuracy": 0.0
+            }
+          },
+          "total_pred": 90,
+          "total_gt": 87,
+          "MAE": 3.0,
+          "MAPE_percent": 35.0,
+          "overall_accuracy": 0.9655172413793104
+        }
+      }
+    ]
+  },
+  "runs/detect/runs/detect/train_v8s_4cls/weights/best.pt": {
+    "weights": "runs/detect/runs/detect/train_v8s_4cls/weights/best.pt",
+    "counting": [
+      {
+        "video": "data/test_videos/raw/demo_traffic.mp4",
+        "pred": {
+          "car": 85,
+          "truck": 1
+        },
+        "gt": {
+          "car": 80,
+          "bus": 1,
+          "truck": 6
+        },
+        "runtime_sec": 2.1,
+        "report": {
+          "per_class": {
+            "bus": {
+              "pred": 0,
+              "gt": 1,
+              "abs_err": 1,
+              "accuracy": 0.0
+            },
+            "car": {
+              "pred": 85,
+              "gt": 80,
+              "abs_err": 5,
+              "accuracy": 0.9375
+            },
+            "truck": {
+              "pred": 1,
+              "gt": 6,
+              "abs_err": 5,
+              "accuracy": 0.16666666666666663
+            }
+          },
+          "total_pred": 86,
+          "total_gt": 87,
+          "MAE": 3.6666666666666665,
+          "MAPE_percent": 63.19444444444445,
+          "overall_accuracy": 0.9885057471264368
+        }
+      }
+    ]
+  }
+}

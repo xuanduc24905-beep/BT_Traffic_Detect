@@ -15,18 +15,19 @@
 
   "nga_tu_01": {
     "video_resolution": [1920, 1080],
+    "_note": "count_direction: 'ltr' đếm khi vector di chuyển tạo cross > 0 với vector line (p1→p2). 'rtl' ngược lại. 'both' đếm cả hai nhưng vẫn tách theo direction.",
     "lines": [
       {
-        "name": "north_south",
-        "direction": "vertical",
-        "points": [[960, 300], [960, 780]],
-        "count_direction": "both"
-      },
-      {
-        "name": "east_west",
+        "name": "north_in",
         "direction": "horizontal",
         "points": [[300, 540], [1620, 540]],
-        "count_direction": "both"
+        "count_direction": "ltr"
+      },
+      {
+        "name": "south_out",
+        "direction": "horizontal",
+        "points": [[1620, 540], [300, 540]],
+        "count_direction": "ltr"
       }
     ]
   }

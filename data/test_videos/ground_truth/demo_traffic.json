@@ -6,15 +6,13 @@
   ],
   "fps": 30.0,
   "duration_sec": 5.9,
-  "_instructions": "Xem video và điền tay số lượt vào counts_by_class.",
+  "_instructions": "GT theo schema 4-class canonical: {motorcycle, car, bus, truck}. Van được gộp vào truck.",
   "counts_by_class": {
+    "motorcycle": 0,
     "car": 80,
     "bus": 1,
-    "van": 6,
-    "truck": 0,
-    "motorcycle": 0,
-    "bicycle": 0
+    "truck": 6
   },
   "counts_by_line": {},
-  "_note": "GT ước lượng cho smoke test — thực tế phải đếm tay từ video demo_traffic.mp4"
+  "_note": "GT ước lượng cho smoke test — van của demo được counted as truck theo mapping trong scripts/import_ua_detrac.py"
 }
