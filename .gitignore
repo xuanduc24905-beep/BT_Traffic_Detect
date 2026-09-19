@@ -19,6 +19,8 @@ runs/
 logs/*.log
 results/videos/*.mp4
 results/videos/*.avi
+baseline/*.mp4
+baseline/*.avi
 
 # Word/Office lock files
 ~$*
