@@ -33,7 +33,7 @@ CELLS = [
 
 **Chủ đề 10** — Nhóm ……
 
-Notebook này chạy end-to-end pipeline từ video giao thông → detect + track + count → thống kê + đánh giá.
+Notebook này chạy end-to-end pipeline từ video giao thông detect + track + count thống kê + đánh giá.
 
 Cấu trúc notebook:
 1. Setup môi trường và imports
@@ -76,10 +76,10 @@ import cv2
 import pandas as pd
 import matplotlib.pyplot as plt
 
-print(f"PyTorch  : {torch.__version__}")
-print(f"CUDA     : {torch.cuda.is_available()} — {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'N/A'}")
+print(f"PyTorch : {torch.__version__}")
+print(f"CUDA : {torch.cuda.is_available()} — {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'N/A'}")
 print(f"Ultralytics: {ultralytics.__version__}")
-print(f"OpenCV   : {cv2.__version__}")
+print(f"OpenCV : {cv2.__version__}")
 """),
 
     # =============== 2. Dataset ===============
@@ -96,7 +96,7 @@ with open(PROJECT_ROOT / "data/data.yaml") as f:
     data_cfg = yaml.safe_load(f)
 print("Config data.yaml:")
 for k, v in data_cfg.items():
-    print(f"  {k}: {v}")
+    print(f" {k}: {v}")
 """),
     code("""
 # Đếm class distribution trong training set
@@ -113,7 +113,7 @@ def count_classes(label_dir):
     return c
 
 train_dist = count_classes(PROJECT_ROOT / "data/merged/labels/train")
-val_dist   = count_classes(PROJECT_ROOT / "data/merged/labels/val")
+val_dist = count_classes(PROJECT_ROOT / "data/merged/labels/val")
 
 names = ["motorcycle", "car", "bus", "truck"]
 print(f"{'Class':<12} {'Train':>10} {'Val':>10}")
@@ -157,9 +157,9 @@ BASELINE_PATH = PROJECT_ROOT / "weights/baseline_detrac4.pt"
 
 model = YOLO(str(MODEL_PATH))
 print(f"Model: {MODEL_PATH.name}")
-print(f"  Task    : {model.task}")
-print(f"  Params  : {sum(p.numel() for p in model.model.parameters()):,}")
-print(f"  Classes : {model.names}")
+print(f" Task : {model.task}")
+print(f" Params : {sum(p.numel() for p in model.model.parameters()):,}")
+print(f" Classes : {model.names}")
 """),
 
     # =============== 4. Detect on sample image ===============
@@ -186,7 +186,7 @@ print(f"Classes có mặt: {[model.names[int(c)] for c in results.boxes.cls]}")
 """),
     code("""
 # Vẽ bounding box lên frame
-annotated = results.plot()  # BGR
+annotated = results.plot() # BGR
 annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
 
 fig, axes = plt.subplots(1, 2, figsize=(16, 6))
@@ -217,12 +217,12 @@ from src.pipeline.run import run_pipeline
 LINES = [
     Line(name="middle_horizontal",
          p1=(100, 474), p2=(1664, 474),
-         count_direction="both"),   # đếm cả 2 chiều
+         count_direction="both"), # đếm cả 2 chiều
 ]
 
 # Chạy pipeline (có xuất video output + CSV events)
 OUT_VIDEO = PROJECT_ROOT / "results/videos/demo_notebook_out.mp4"
-OUT_CSV   = PROJECT_ROOT / "results/tables/demo_notebook_events.csv"
+OUT_CSV = PROJECT_ROOT / "results/tables/demo_notebook_events.csv"
 OUT_VIDEO.parent.mkdir(parents=True, exist_ok=True)
 OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
 
@@ -255,7 +255,7 @@ Video(str(OUT_VIDEO), embed=True, width=800)
     md("""
 ## 6. Aggregate + biểu đồ thống kê
 
-Đọc CSV events → DataFrame → group theo class, thời gian, direction → vẽ biểu đồ.
+Đọc CSV events DataFrame group theo class, thời gian, direction vẽ biểu đồ.
 """),
     code("""
 from src.stats.aggregator import (
@@ -274,7 +274,7 @@ print(f"\\nShape: {df_enriched.shape}")
 summ = summarize(df_enriched)
 print("Summary:")
 for k, v in summ.items():
-    print(f"  {k}: {v}")
+    print(f" {k}: {v}")
 """),
     code("""
 # Flow rate
@@ -346,16 +346,16 @@ print(f"Ground truth: {gt_counts}")
 
 # Pred từ pipeline vừa chạy
 pred_counts = df_enriched["class_name"].value_counts().to_dict()
-print(f"Prediction:   {pred_counts}")
+print(f"Prediction: {pred_counts}")
 
 rep = eval_report(pred_counts, gt_counts)
 print(f"\\n=== Metrics ===")
 print(f"Overall Accuracy : {rep['overall_accuracy']:.3f}")
-print(f"MAE              : {rep['MAE']:.2f}")
-print(f"MAPE             : {rep['MAPE_percent']:.1f}%")
+print(f"MAE : {rep['MAE']:.2f}")
+print(f"MAPE : {rep['MAPE_percent']:.1f}%")
 print(f"\\nPer-class:")
 for cls, r in rep["per_class"].items():
-    print(f"  {cls:<12} pred={r['pred']:3d}  gt={r['gt']:3d}  |err|={r['abs_err']:3d}  acc={r['accuracy']:.3f}")
+    print(f" {cls:<12} pred={r['pred']:3d} gt={r['gt']:3d} |err|={r['abs_err']:3d} acc={r['accuracy']:.3f}")
 """),
     code("""
 # Tầng B cho baseline (v8n cũ)
@@ -388,17 +388,17 @@ Uncomment để chạy. Yêu cầu test set 56k ảnh đã có label sẵn ở `
 """),
     code("""
 # metrics_val = model.val(data=str(PROJECT_ROOT/'data/data.yaml'), split='test', imgsz=512, verbose=False)
-# print(f"mAP@0.5      : {metrics_val.box.map50:.3f}")
+# print(f"mAP@0.5 : {metrics_val.box.map50:.3f}")
 # print(f"mAP@0.5-0.95 : {metrics_val.box.map:.3f}")
-# print(f"Precision    : {metrics_val.box.mp:.3f}")
-# print(f"Recall       : {metrics_val.box.mr:.3f}")
+# print(f"Precision : {metrics_val.box.mp:.3f}")
+# print(f"Recall : {metrics_val.box.mr:.3f}")
 """),
 
     # =============== 8. Conclusion ===============
     md("""
 ## 8. Kết luận
 
-Notebook này đã minh hoạ toàn bộ pipeline **detect → track → count → aggregate → evaluate**:
+Notebook này đã minh hoạ toàn bộ pipeline **detect track count aggregate evaluate**:
 
 | Thành phần | Chi tiết |
 |---|---|
@@ -447,9 +447,9 @@ def main():
 
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(nb, f, indent=1, ensure_ascii=False)
-    print(f"[✓] Đã sinh: {OUT}")
-    print(f"    Số cell: {len(CELLS)}")
-    print(f"    Kích thước: {OUT.stat().st_size / 1024:.1f} KB")
+    print(f"[] Đã sinh: {OUT}")
+    print(f" Số cell: {len(CELLS)}")
+    print(f" Kích thước: {OUT.stat().st_size / 1024:.1f} KB")
 
 
 if __name__ == "__main__":

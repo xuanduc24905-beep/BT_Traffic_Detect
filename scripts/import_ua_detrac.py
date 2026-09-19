@@ -4,11 +4,11 @@ Chiến lược: KHÔNG copy 60GB ảnh — symlink JPG gốc từ raw/DETRAC-Im
 copy + remap file label .txt (dung lượng nhỏ). Giữ nguyên split train/val/test
 đã có sẵn.
 
-Class remap (DETRAC 4-class → canonical 4-class):
-    0 car    → 1 car
-    1 bus    → 2 bus
-    2 van    → 3 truck       (van gần truck nhất về hình dáng)
-    3 others → null (bỏ)
+Class remap (DETRAC 4-class canonical 4-class):
+    0 car 1 car
+    1 bus 2 bus
+    2 van 3 truck (van gần truck nhất về hình dáng)
+    3 others null (bỏ)
 Schema canonical 4-class: {0: motorcycle, 1: car, 2: bus, 3: truck} — bỏ bicycle.
 
 Chạy: python scripts/import_ua_detrac.py
@@ -26,7 +26,7 @@ OLD_RAW_IMAGES = Path(
 CANONICAL = ["motorcycle", "car", "bus", "truck"]
 CANON_ID = {name: i for i, name in enumerate(CANONICAL)}
 
-# Regex tách tên: MVI_20011_img00001.txt → ("MVI_20011", "img00001")
+# Regex tách tên: MVI_20011_img00001.txt ("MVI_20011", "img00001")
 NAME_RE = re.compile(r"^(MVI_\d+)_(img\d+)$")
 
 
@@ -89,9 +89,9 @@ def process_split(split: str, out_root: Path, mapping: dict, dry_run: bool):
         n_kept += 1
 
         if n_kept % 5000 == 0:
-            print(f"  ... {split}: đã xử lý {n_kept}/{n_total}")
+            print(f" ... {split}: đã xử lý {n_kept}/{n_total}")
 
-    print(f"[✓] {split}: giữ {n_kept}/{n_total} ảnh (thiếu JPG: {n_missing_img})")
+    print(f"[] {split}: giữ {n_kept}/{n_total} ảnh (thiếu JPG: {n_missing_img})")
     return n_kept, n_total
 
 
@@ -106,11 +106,11 @@ def main():
     with open(args.mapping) as f:
         mapping = json.load(f)["ua_detrac"]
 
-    print("=== IMPORT UA-DETRAC → data/merged ===")
-    print(f"  Old labels : {OLD_LABELS}")
-    print(f"  Old images : {OLD_RAW_IMAGES}")
-    print(f"  Output     : {args.out}")
-    print(f"  Mapping    : {mapping}")
+    print("=== IMPORT UA-DETRAC data/merged ===")
+    print(f" Old labels : {OLD_LABELS}")
+    print(f" Old images : {OLD_RAW_IMAGES}")
+    print(f" Output : {args.out}")
+    print(f" Mapping : {mapping}")
     print()
 
     if not OLD_LABELS.exists():
@@ -127,7 +127,7 @@ def main():
         grand_kept += k
 
     print()
-    print(f"[✓] TỔNG: {grand_kept} ảnh đã import (symlink JPG + label remapped)")
+    print(f"[] TỔNG: {grand_kept} ảnh đã import (symlink JPG + label remapped)")
     if args.dry_run:
         print("[i] Dry-run — chưa tạo file thật. Bỏ --dry-run để chạy thật.")
     else:

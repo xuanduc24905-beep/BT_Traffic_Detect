@@ -10,7 +10,7 @@ def test_accuracy_partial():
 
 
 def test_accuracy_over():
-    # pred vượt 20% → 1 - 0.2 = 0.8
+    # pred vượt 20% 1 - 0.2 = 0.8
     assert abs(counting_accuracy(120, 100) - 0.8) < 1e-9
 
 

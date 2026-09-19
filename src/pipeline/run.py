@@ -1,4 +1,4 @@
-"""Pipeline tích hợp end-to-end: video → detect+track → count → CSV events + video annotated.
+"""Pipeline tích hợp end-to-end: video detect+track count CSV events + video annotated.
 
 Có thể dùng qua CLI (main) hoặc import function `run_pipeline` từ code khác (Streamlit).
 
@@ -50,7 +50,7 @@ def draw_overlay(frame, boxes_xyxy, ids, classes, lines, counter, class_names):
         for direction, per_cls in dirs.items():
             sub = sum(per_cls.values())
             color = _DIR_COLOR.get(direction, (200, 200, 200))
-            cv2.putText(frame, f"  {direction}: {sub}", (20, y),
+            cv2.putText(frame, f" {direction}: {sub}", (20, y),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 1)
             y += 20
     return frame
@@ -158,8 +158,8 @@ def main():
         half=args.half,
         out_csv=args.out_csv, out_video=args.out_video,
     )
-    print(f"[✓] {len(events)} events → {args.out_csv}")
-    print(f"[✓] Totals: {totals}")
+    print(f"[] {len(events)} events {args.out_csv}")
+    print(f"[] Totals: {totals}")
 
 
 if __name__ == "__main__":

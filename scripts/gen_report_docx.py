@@ -120,9 +120,9 @@ def main():
 
     add_heading(doc, "1.2 Phần mở rộng đã làm (ngoài yêu cầu tối thiểu)", level=2)
     for ext in [
-        "Merge 2 dataset (UA-DETRAC + Vietnam Cần Thơ) → thêm class 'motorcycle' quan trọng cho VN",
+        "Merge 2 dataset (UA-DETRAC + Vietnam Cần Thơ) thêm class 'motorcycle' quan trọng cho VN",
         "Direction-aware counting: phân biệt xe đi vào/ra qua 1 line (ltr/rtl) bằng cross-product",
-        "FP16 inference + tuỳ chọn imgsz → tăng tốc 1.5-2× mà mAP chỉ giảm ~2%",
+        "FP16 inference + tuỳ chọn imgsz tăng tốc 1.5-2× mà mAP chỉ giảm ~2%",
         "Streamlit UI cho phép: upload video, chỉnh line/model/threshold, xem thống kê + biểu đồ",
         "Evaluation 2 tầng: mAP trên test set 56k ảnh + counting accuracy trên video có GT",
         "Auto-resume training: dừng bất kỳ lúc nào rồi train tiếp không mất progress",
@@ -134,19 +134,19 @@ def main():
     add_para(doc, "Luồng dữ liệu end-to-end từ video đầu vào tới output:")
     add_code(doc,
              "Video (MP4)\n"
-             "    ↓\n"
-             "[1] Detection — YOLOv8s → boxes + class_id + confidence\n"
-             "    ↓\n"
-             "[2] Tracking — ByteTrack (built-in Ultralytics) → gán track_id ổn định qua các frame\n"
-             "    ↓\n"
+             " \n"
+             "[1] Detection — YOLOv8s boxes + class_id + confidence\n"
+             " \n"
+             "[2] Tracking — ByteTrack (built-in Ultralytics) gán track_id ổn định qua các frame\n"
+             " \n"
              "[3] Counter — cross-product line-vector × movement-vector\n"
-             "    → detect khi xe cắt line, phân direction (ltr/rtl)\n"
-             "    → chống đếm trùng bằng set (line_name, track_id)\n"
-             "    ↓\n"
-             "[4] Aggregator — pandas → DataFrame events, group theo class/thời gian/direction\n"
-             "    ↓\n"
-             "[5] Visualize — matplotlib → biểu đồ bar/line/heatmap/cumulative\n"
-             "    ↓\n"
+             " detect khi xe cắt line, phân direction (ltr/rtl)\n"
+             " chống đếm trùng bằng set (line_name, track_id)\n"
+             " \n"
+             "[4] Aggregator — pandas DataFrame events, group theo class/thời gian/direction\n"
+             " \n"
+             "[5] Visualize — matplotlib biểu đồ bar/line/heatmap/cumulative\n"
+             " \n"
              "OUTPUT: video annotated + CSV events + biểu đồ PNG + JSON summary")
 
     # ==================== 3. Cấu trúc thư mục ====================
@@ -154,44 +154,44 @@ def main():
     add_code(doc,
              "vn_traffic_ai/\n"
              "├── configs/\n"
-             "│   ├── class_mapping.json        # ánh xạ class ID giữa các dataset gốc và schema canonical\n"
-             "│   └── counting_zones.json      # định nghĩa line/zone đếm cho mỗi video test\n"
+             "│ ├── class_mapping.json # ánh xạ class ID giữa các dataset gốc và schema canonical\n"
+             "│ └── counting_zones.json # định nghĩa line/zone đếm cho mỗi video test\n"
              "├── data/\n"
-             "│   ├── data.yaml                # config Ultralytics: 4-class, đường dẫn dataset\n"
-             "│   ├── raw_vn_cantho/           # dataset VN gốc (extracted từ zip)\n"
-             "│   ├── merged/                  # dataset đã merge + remap schema (gitignored)\n"
-             "│   └── test_videos/\n"
-             "│       ├── raw/                 # video test\n"
-             "│       └── ground_truth/        # GT counts thủ công (JSON)\n"
+             "│ ├── data.yaml # config Ultralytics: 4-class, đường dẫn dataset\n"
+             "│ ├── raw_vn_cantho/ # dataset VN gốc (extracted từ zip)\n"
+             "│ ├── merged/ # dataset đã merge + remap schema (gitignored)\n"
+             "│ └── test_videos/\n"
+             "│ ├── raw/ # video test\n"
+             "│ └── ground_truth/ # GT counts thủ công (JSON)\n"
              "├── scripts/\n"
-             "│   ├── import_ua_detrac.py      # import + remap class UA-DETRAC → canonical\n"
-             "│   ├── import_cantho_vn.py     # import + remap class VN Cần Thơ\n"
-             "│   ├── train.sh                 # script train YOLOv8s (fresh/resume/auto)\n"
-             "│   ├── eval_after_training.sh  # watcher: chờ training xong tự eval\n"
-             "│   └── gen_report_docx.py       # sinh file báo cáo này\n"
+             "│ ├── import_ua_detrac.py # import + remap class UA-DETRAC canonical\n"
+             "│ ├── import_cantho_vn.py # import + remap class VN Cần Thơ\n"
+             "│ ├── train.sh # script train YOLOv8s (fresh/resume/auto)\n"
+             "│ ├── eval_after_training.sh # watcher: chờ training xong tự eval\n"
+             "│ └── gen_report_docx.py # sinh file báo cáo này\n"
              "├── src/\n"
-             "│   ├── detection/\n"
-             "│   │   ├── train.py             # wrapper Ultralytics YOLO.train() + --resume\n"
-             "│   │   ├── infer.py             # inference đơn lẻ\n"
-             "│   │   └── evaluate.py          # val mAP\n"
-             "│   ├── tracking/\n"
-             "│   │   ├── track.py             # wrapper model.track() ByteTrack\n"
-             "│   │   └── counter.py           # Counter class với direction filter\n"
-             "│   ├── pipeline/\n"
-             "│   │   └── run.py               # tích hợp detect+track+count + xuất CSV/video\n"
-             "│   ├── stats/\n"
-             "│   │   ├── aggregator.py        # groupby thời gian, class, direction\n"
-             "│   │   └── visualize.py         # bar/line/heatmap/cumulative charts\n"
-             "│   └── evaluation/\n"
-             "│       ├── metrics.py           # accuracy, MAE, MAPE\n"
-             "│       └── eval_full.py         # eval 2 tầng: mAP + counting\n"
+             "│ ├── detection/\n"
+             "│ │ ├── train.py # wrapper Ultralytics YOLO.train() + --resume\n"
+             "│ │ ├── infer.py # inference đơn lẻ\n"
+             "│ │ └── evaluate.py # val mAP\n"
+             "│ ├── tracking/\n"
+             "│ │ ├── track.py # wrapper model.track() ByteTrack\n"
+             "│ │ └── counter.py # Counter class với direction filter\n"
+             "│ ├── pipeline/\n"
+             "│ │ └── run.py # tích hợp detect+track+count + xuất CSV/video\n"
+             "│ ├── stats/\n"
+             "│ │ ├── aggregator.py # groupby thời gian, class, direction\n"
+             "│ │ └── visualize.py # bar/line/heatmap/cumulative charts\n"
+             "│ └── evaluation/\n"
+             "│ ├── metrics.py # accuracy, MAE, MAPE\n"
+             "│ └── eval_full.py # eval 2 tầng: mAP + counting\n"
              "├── ui/\n"
-             "│   └── streamlit_app.py         # web UI 3 tab: Run / Stats / Eval\n"
+             "│ └── streamlit_app.py # web UI 3 tab: Run / Stats / Eval\n"
              "├── weights/\n"
-             "│   ├── baseline_detrac4.pt      # baseline v8n cũ (UA-DETRAC 4-class)\n"
-             "│   └── v8s_4cls_best.pt         # ⭐ model mới, best.pt sau 50 epoch\n"
-             "├── runs/                        # Ultralytics training outputs (gitignored)\n"
-             "├── results/                     # eval outputs + biểu đồ + video demo\n"
+             "│ ├── baseline_detrac4.pt # baseline v8n cũ (UA-DETRAC 4-class)\n"
+             "│ └── v8s_4cls_best.pt # model mới, best.pt sau 50 epoch\n"
+             "├── runs/ # Ultralytics training outputs (gitignored)\n"
+             "├── results/ # eval outputs + biểu đồ + video demo\n"
              "└── README.md, requirements.txt, .gitignore\n")
 
     # ==================== 4. Chi tiết từng module ====================
@@ -208,7 +208,7 @@ def main():
         "--pretrained yolov8s.pt: khởi tạo từ COCO 80-class, Ultralytics tự remap head sang 4-class",
         "--patience 15: early stopping — dừng nếu 15 epoch không cải thiện val fitness",
         "--resume + --name: auto-detect last.pt bằng glob, tiếp tục epoch dừng dở",
-        "--cache ram: cache toàn bộ dataset vào RAM → giảm 40% thời gian/epoch (dataset ~20GB)",
+        "--cache ram: cache toàn bộ dataset vào RAM giảm 40% thời gian/epoch (dataset ~20GB)",
         "Fitness = 0.1×mAP@0.5 + 0.9×mAP@0.5-0.95 — Ultralytics dùng metric này để chọn best.pt",
     ]:
         add_bullet(doc, x)
@@ -233,19 +233,19 @@ def main():
     add_para(doc, "Module lõi nhất của pipeline. Ý tưởng thuật toán:", bold=True)
     add_code(doc,
              "Mỗi frame, với mỗi track_id đang active:\n"
-             "  1. Tính tâm box hiện tại: curr = ((x1+x2)/2, (y1+y2)/2)\n"
-             "  2. Nếu có tâm frame trước (prev):\n"
-             "     - Segment prev→curr có cắt counting line không? (segments_cross)\n"
-             "     - Nếu có: xác định direction bằng cross-product\n"
-             "         line_vector = p2 - p1\n"
-             "         movement_vector = curr - prev\n"
-             "         cross = line_vec.x × mov_vec.y − line_vec.y × mov_vec.x\n"
-             "         cross > 0 → 'ltr' (trái→phải theo chiều line)\n"
-             "         cross < 0 → 'rtl' (phải→trái)\n"
-             "     - Kiểm tra count_direction config: nếu 'ltr' và movement là 'rtl' → BỎ QUA\n"
-             "     - Nếu qua: counts[line][direction][class] += 1\n"
-             "     - Đánh dấu (line_name, track_id) vào set _counted → không đếm lại lần 2\n"
-             "  3. Update prev_center[track_id] = curr")
+             " 1. Tính tâm box hiện tại: curr = ((x1+x2)/2, (y1+y2)/2)\n"
+             " 2. Nếu có tâm frame trước (prev):\n"
+             " - Segment prevcurr có cắt counting line không? (segments_cross)\n"
+             " - Nếu có: xác định direction bằng cross-product\n"
+             " line_vector = p2 - p1\n"
+             " movement_vector = curr - prev\n"
+             " cross = line_vec.x × mov_vec.y − line_vec.y × mov_vec.x\n"
+             " cross > 0 'ltr' (tráiphải theo chiều line)\n"
+             " cross < 0 'rtl' (phảitrái)\n"
+             " - Kiểm tra count_direction config: nếu 'ltr' và movement là 'rtl' BỎ QUA\n"
+             " - Nếu qua: counts[line][direction][class] += 1\n"
+             " - Đánh dấu (line_name, track_id) vào set _counted không đếm lại lần 2\n"
+             " 3. Update prev_center[track_id] = curr")
     add_para(doc, "Chống đếm trùng:", bold=True)
     add_para(doc,
              "Set _counted lưu key (line_name, track_id) đã đếm. Nếu xe quay đầu và cắt "
@@ -268,13 +268,13 @@ def main():
     # 4.5 Stats
     add_heading(doc, "4.5 Aggregator + Visualize — src/stats/", level=2)
     add_para(doc,
-             "aggregator.py: nhận list events → pandas DataFrame → group theo bucket thời gian "
+             "aggregator.py: nhận list events pandas DataFrame group theo bucket thời gian "
              "(30s, 1p, 5p, 15p, 30p, 1h) tuỳ chọn.")
     add_para(doc, "Các hàm chính:", bold=True)
     for x in [
         "events_to_df(): chuẩn hoá + thêm cột time_min, time_hour",
         "summarize(): tổng, per_class, per_line, per_direction, per_class_per_line",
-        "counts_per_bucket(bucket_sec): pivot theo bucket → DataFrame [bucket × class]",
+        "counts_per_bucket(bucket_sec): pivot theo bucket DataFrame [bucket × class]",
         "flow_rate(unit): xe/phút hoặc xe/giờ trung bình",
         "peak_period(): tìm khung giờ đông xe nhất",
         "cumulative_counts(): đếm cộng dồn theo thời gian",
@@ -298,8 +298,8 @@ def main():
         add_bullet(doc, x)
     add_para(doc, "eval_full.py: eval 2 tầng cho mỗi model", bold=True)
     for x in [
-        "Tầng A - mAP: gọi YOLO.val() trên test set 56k ảnh có label sẵn → mAP@0.5, mAP@0.5-0.95, P, R per-class. Auto skip nếu schema model ≠ data.yaml.",
-        "Tầng B - Counting: chạy run_pipeline() trên video có GT thủ công (demo_traffic.mp4) → so bằng report() → accuracy/MAE/MAPE.",
+        "Tầng A - mAP: gọi YOLO.val() trên test set 56k ảnh có label sẵn mAP@0.5, mAP@0.5-0.95, P, R per-class. Auto skip nếu schema model ≠ data.yaml.",
+        "Tầng B - Counting: chạy run_pipeline() trên video có GT thủ công (demo_traffic.mp4) so bằng report() accuracy/MAE/MAPE.",
         "Output: JSON tổng hợp cho tất cả model đã chọn, ghi vào results/tables/eval_full.json",
     ]:
         add_bullet(doc, x)
@@ -308,9 +308,9 @@ def main():
     add_heading(doc, "4.7 Streamlit UI — ui/streamlit_app.py", level=2)
     add_para(doc, "Web interface 3 tab, giúp không cần code cũng dùng được pipeline:")
     for x in [
-        "Tab 'Chạy pipeline': upload video → chỉnh line/threshold/model/FP16 → run → xem output video có overlay + download",
+        "Tab 'Chạy pipeline': upload video chỉnh line/threshold/model/FP16 run xem output video có overlay + download",
         "Tab 'Thống kê': bảng events, biểu đồ bar/line theo bucket, heatmap, cumulative, flow rate, peak period",
-        "Tab 'Đánh giá': upload GT JSON hoặc điền tay → tính accuracy/MAE/MAPE per-class + download eval report JSON",
+        "Tab 'Đánh giá': upload GT JSON hoặc điền tay tính accuracy/MAE/MAPE per-class + download eval report JSON",
     ]:
         add_bullet(doc, x)
     add_para(doc, "Chạy: streamlit run ui/streamlit_app.py", italic=True)
@@ -333,16 +333,16 @@ def main():
     add_para(doc, "File configs/class_mapping.json định nghĩa ánh xạ:")
     add_code(doc,
              "Canonical 4-class: {0: motorcycle, 1: car, 2: bus, 3: truck}\n\n"
-             "UA-DETRAC → canonical:\n"
-             "  0 (car)    → 1 (car)\n"
-             "  1 (bus)    → 2 (bus)\n"
-             "  2 (van)    → 3 (truck)    # van gộp truck vì hình dáng gần nhất\n"
-             "  3 (others) → null (bỏ)\n\n"
-             "VN Cần Thơ → canonical:\n"
-             "  0 (bus)       → 2 (bus)\n"
-             "  1 (car)       → 1 (car)\n"
-             "  2 (motorbike) → 0 (motorcycle)   ← ⭐ giá trị chính từ VN\n"
-             "  3 (truck)     → 3 (truck)")
+             "UA-DETRAC canonical:\n"
+             " 0 (car) 1 (car)\n"
+             " 1 (bus) 2 (bus)\n"
+             " 2 (van) 3 (truck) # van gộp truck vì hình dáng gần nhất\n"
+             " 3 (others) null (bỏ)\n\n"
+             "VN Cần Thơ canonical:\n"
+             " 0 (bus) 2 (bus)\n"
+             " 1 (car) 1 (car)\n"
+             " 2 (motorbike) 0 (motorcycle) giá trị chính từ VN\n"
+             " 3 (truck) 3 (truck)")
 
     add_heading(doc, "5.3 Class distribution merged (train split)", level=2)
     add_table(doc,
@@ -392,7 +392,7 @@ def main():
     add_table(doc,
               ["Class", "mAP@0.5", "mAP@0.5-0.95", "Nhận xét"],
               [
-                  ["motorcycle", "0.871", "0.571", "⭐ xuất sắc — model học tốt xe máy VN"],
+                  ["motorcycle", "0.871", "0.571", " xuất sắc — model học tốt xe máy VN"],
                   ["car", "0.744", "0.555", "Tốt"],
                   ["bus", "0.781", "0.578", "Tốt"],
                   ["truck", "0.524", "0.407", "Yếu — do trộn van + truck từ UA-DETRAC"],
@@ -407,10 +407,10 @@ def main():
               ["Metric", "Baseline (v8n 4-class UA-DETRAC)", "Model mới (v8s 4-class merged)"],
               [
                   ["Params", "3M", "11M (3.7× lớn hơn)"],
-                  ["Có motorcycle?", "❌ Không", "✅ Có (mAP 0.87)"],
+                  ["Có motorcycle?", " Không", " Có (mAP 0.87)"],
                   ["mAP@0.5 test set", "0.009 (schema lệch)", "0.843 (99×!)"],
                   ["Counting demo (MAE)", "3.00", "3.67"],
-                  ["Domain phù hợp VN?", "🟡 Vừa", "✅ Có xe máy VN"],
+                  ["Domain phù hợp VN?", " Vừa", " Có xe máy VN"],
               ])
     add_para(doc,
              "Nhận xét: baseline chỉ trông 'tốt' trên counting demo vì trùng schema data cũ, "
@@ -443,7 +443,7 @@ def main():
 
     add_heading(doc, "8.3 Training", level=2)
     add_code(doc,
-             "# Train mới (batch 32, imgsz 512, cache ram → ~6-7 phút/epoch)\n"
+             "# Train mới (batch 32, imgsz 512, cache ram ~6-7 phút/epoch)\n"
              "./scripts/train.sh fresh\n\n"
              "# Xem live log\n"
              "tail -f logs/train_v8s_4cls.log\n\n"
@@ -457,13 +457,13 @@ def main():
     add_code(doc,
              "# CLI\n"
              "python -m src.pipeline.run \\\n"
-             "    --video data/test_videos/raw/demo_traffic.mp4 \\\n"
-             "    --weights weights/v8s_4cls_best.pt \\\n"
-             "    --counting-config configs/counting_zones.json \\\n"
-             "    --video-key demo_traffic \\\n"
-             "    --out-csv results/tables/demo_events.csv \\\n"
-             "    --out-video results/videos/demo_out.mp4 \\\n"
-             "    --half\n\n"
+             " --video data/test_videos/raw/demo_traffic.mp4 \\\n"
+             " --weights weights/v8s_4cls_best.pt \\\n"
+             " --counting-config configs/counting_zones.json \\\n"
+             " --video-key demo_traffic \\\n"
+             " --out-csv results/tables/demo_events.csv \\\n"
+             " --out-video results/videos/demo_out.mp4 \\\n"
+             " --half\n\n"
              "# Hoặc dùng UI\n"
              "streamlit run ui/streamlit_app.py",
              lang="bash")
@@ -476,7 +476,7 @@ def main():
              "python -m src.evaluation.eval_full --skip-mAP\n\n"
              "# Chọn model tuỳ ý\n"
              "python -m src.evaluation.eval_full \\\n"
-             "    --models weights/v8s_4cls_best.pt runs/detect/runs/detect/train_v8s_4cls/weights/last.pt",
+             " --models weights/v8s_4cls_best.pt runs/detect/runs/detect/train_v8s_4cls/weights/last.pt",
              lang="bash")
 
     # ==================== 9. Phân công thuyết trình ====================
@@ -529,13 +529,13 @@ def main():
          "cho 1 line. Xe quay đầu qua lại vẫn không đếm lại."),
         ("Direction (ltr/rtl) tính bằng cách nào?",
          "Cross-product line_vector × movement_vector. Dấu (>0 hay <0) quyết định "
-         "hướng đi tương đối so với vector line (p1→p2)."),
+         "hướng đi tương đối so với vector line (p1p2)."),
         ("Vì sao MAPE counting cao trên demo (63%)?",
          "Demo_traffic.mp4 gốc UA-DETRAC có 'van' — bị gộp vào truck theo mapping. "
          "Nếu test video VN thực tế (có xe máy) thì MAPE sẽ tốt hơn nhiều."),
         ("Vì sao truck có mAP thấp (0.52)?",
          "Vì đã gộp 'van' của UA-DETRAC vào 'truck' — 2 loại xe hình dáng khác nhau bị "
-         "cùng label → confusion. Trade-off có ý thức để có 4-class thống nhất."),
+         "cùng label confusion. Trade-off có ý thức để có 4-class thống nhất."),
         ("Class motorcycle chỉ có 2k samples, sao mAP đến 0.87?",
          "Dataset VN Cần Thơ có 1786 instances motorcycle chất lượng cao (annotation "
          "chuẩn Roboflow), đủ để YOLO học được đặc trưng xe máy. Số lượng ít nhưng "
@@ -567,8 +567,8 @@ def main():
         add_bullet(doc, x)
 
     doc.save(str(OUT_PATH))
-    print(f"[✓] Đã sinh: {OUT_PATH}")
-    print(f"    Kích thước: {OUT_PATH.stat().st_size / 1024:.1f} KB")
+    print(f"[] Đã sinh: {OUT_PATH}")
+    print(f" Kích thước: {OUT_PATH.stat().st_size / 1024:.1f} KB")
 
 
 if __name__ == "__main__":

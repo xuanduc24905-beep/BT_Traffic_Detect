@@ -37,9 +37,9 @@ Notebook này viết **toàn bộ code inline** để nhóm đọc hiểu cách 
 
 Cấu trúc 10 phần:
 1. Setup + đọc video
-2. Load YOLOv8 model → detect 1 frame → hiểu output tensor
+2. Load YOLOv8 model detect 1 frame hiểu output tensor
 3. Vẽ bounding box thủ công lên frame
-4. Tracking với ByteTrack → hiểu track_id
+4. Tracking với ByteTrack hiểu track_id
 5. **Implement Counter class từ đầu** (segment intersection + cross-product)
 6. Vòng lặp chính: detect + track + count qua toàn bộ video
 7. Ghi video output có overlay + CSV events
@@ -80,8 +80,8 @@ print(f"Model exists: {MODEL_PATH.exists()}")
 # Mở video, đọc metadata
 cap = cv2.VideoCapture(str(VIDEO_PATH))
 FPS = cap.get(cv2.CAP_PROP_FPS)
-W   = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-H   = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 N_FRAMES = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 cap.release()
 
@@ -100,7 +100,7 @@ Trước khi chạy pipeline full video, hãy detect thử 1 frame để biết 
 
 YOLO.predict() trả về `Results` object có:
 - `results.boxes.xyxy` — tensor (N, 4) toạ độ bbox pixel
-- `results.boxes.cls`  — tensor (N,) class id
+- `results.boxes.cls` — tensor (N,) class id
 - `results.boxes.conf` — tensor (N,) confidence [0,1]
 """),
     code("""
@@ -112,7 +112,7 @@ print("Model class names:", model.names)
     code("""
 # Lấy frame đầu tiên
 cap = cv2.VideoCapture(str(VIDEO_PATH))
-ret, frame = cap.read()  # frame là numpy array BGR (H, W, 3)
+ret, frame = cap.read() # frame là numpy array BGR (H, W, 3)
 cap.release()
 
 print(f"Frame shape: {frame.shape}, dtype: {frame.dtype}")
@@ -130,7 +130,7 @@ print(f"\\nConfidence (5 đầu): {results.boxes.conf[:5]}")
 for i, (box, cls, conf) in enumerate(zip(results.boxes.xyxy, results.boxes.cls, results.boxes.conf)):
     x1, y1, x2, y2 = box.cpu().numpy().astype(int)
     cname = model.names[int(cls)]
-    print(f"[{i:2d}] {cname:10s} conf={conf:.2f}  box=({x1},{y1})-({x2},{y2})")
+    print(f"[{i:2d}] {cname:10s} conf={conf:.2f} box=({x1},{y1})-({x2},{y2})")
 """),
 
     # ============ 3. VẼ BOX ============
@@ -158,7 +158,7 @@ for box, cls, conf in zip(results.boxes.xyxy, results.boxes.cls, results.boxes.c
     cv2.putText(frame_annotated, label, (x1, max(0, y1 - 6)),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
-# Hiển thị (convert BGR → RGB cho matplotlib)
+# Hiển thị (convert BGR RGB cho matplotlib)
 fig, ax = plt.subplots(figsize=(14, 8))
 ax.imshow(cv2.cvtColor(frame_annotated, cv2.COLOR_BGR2RGB))
 ax.set_title(f"Frame với {len(results.boxes)} bounding box")
@@ -185,7 +185,7 @@ cap = cv2.VideoCapture(str(VIDEO_PATH))
 # Reset model tracker state (quan trọng nếu chạy nhiều lần)
 model = YOLO(str(MODEL_PATH))
 
-track_history = []  # lưu (frame_idx, list of track_ids)
+track_history = [] # lưu (frame_idx, list of track_ids)
 
 for i in range(20):
     ret, frame = cap.read()
@@ -201,7 +201,7 @@ cap.release()
 
 print("Track IDs qua từng frame:")
 for f_idx, ids in track_history[:10]:
-    print(f"  Frame {f_idx:3d}: {ids}")
+    print(f" Frame {f_idx:3d}: {ids}")
 
 # Đếm số track ID unique
 all_ids = set()
@@ -222,7 +222,7 @@ print(f"\\nTổng track_id unique trong 20 frame: {len(all_ids)}")
 
 1. Với mỗi frame, tính **tâm bounding box** của mỗi xe: `(cx, cy) = ((x1+x2)/2, (y1+y2)/2)`
 2. Lưu tâm frame trước: `prev_center[track_id] = (cx, cy)`
-3. Nếu segment `prev → curr` **cắt qua counting line** → xe đã đi qua line → tăng counter
+3. Nếu segment `prev curr` **cắt qua counting line** xe đã đi qua line tăng counter
 4. Đánh dấu `(line_name, track_id)` vào set để **không đếm trùng**
 
 Kèm theo: xác định **hướng đi** (ltr/rtl) bằng cross-product.
@@ -261,12 +261,12 @@ def crossing_direction(prev, curr, line_p1, line_p2):
 
 
 # Test nhanh 2 hàm này
-line_p1, line_p2 = (0, 100), (200, 100)  # line ngang
-prev, curr = (100, 50), (100, 150)         # xe đi từ trên xuống
+line_p1, line_p2 = (0, 100), (200, 100) # line ngang
+prev, curr = (100, 50), (100, 150) # xe đi từ trên xuống
 print(f"Xe từ trên xuống, cắt line? {segments_cross(prev, curr, line_p1, line_p2)}")
 print(f"Hướng: {crossing_direction(prev, curr, line_p1, line_p2)}")
 
-prev2, curr2 = (100, 150), (100, 50)       # xe đi từ dưới lên
+prev2, curr2 = (100, 150), (100, 50) # xe đi từ dưới lên
 print(f"Xe từ dưới lên, cắt line? {segments_cross(prev2, curr2, line_p1, line_p2)}")
 print(f"Hướng: {crossing_direction(prev2, curr2, line_p1, line_p2)}")
 """),
@@ -278,9 +278,9 @@ from dataclasses import dataclass, field
 class Line:
     '''Đại diện 1 counting line.'''
     name: str
-    p1: tuple             # (x, y)
-    p2: tuple             # (x, y)
-    count_direction: str = "both"   # 'both' | 'ltr' | 'rtl'
+    p1: tuple # (x, y)
+    p2: tuple # (x, y)
+    count_direction: str = "both" # 'both' | 'ltr' | 'rtl'
 
 
 @dataclass
@@ -313,15 +313,15 @@ class Counter:
                 for line in self.lines:
                     key = (line.name, tid)
                     if key in self._counted:
-                        continue   # đã đếm trước đó
+                        continue # đã đếm trước đó
                     if not segments_cross(prev, curr, line.p1, line.p2):
-                        continue   # chưa cắt
+                        continue # chưa cắt
 
                     direction = crossing_direction(prev, curr, line.p1, line.p2)
 
                     # Filter theo hướng cấu hình
                     if line.count_direction != "both" and line.count_direction != direction:
-                        self._counted.add(key)  # đánh dấu để không xét lại
+                        self._counted.add(key) # đánh dấu để không xét lại
                         continue
 
                     # ĐẾM
@@ -347,8 +347,8 @@ counter = Counter(lines=lines)
 counter.update(0, [[95, 45, 105, 55]], [1], [0])
 counter.update(0, [[95, 145, 105, 155]], [2], [0])
 
-# Frame 1: id=1 xuống (100, 150) → cắt line ltr
-# id=2 lên (100, 50) → cắt line rtl
+# Frame 1: id=1 xuống (100, 150) cắt line ltr
+# id=2 lên (100, 50) cắt line rtl
 ev1 = counter.update(1, [[95, 145, 105, 155]], [1], [0])
 ev2 = counter.update(1, [[95, 45, 105, 55]], [2], [0])
 print(f"Events id=1: {ev1}")
@@ -361,7 +361,7 @@ print(f"Counts: {dict(counter.counts)}")
 ---
 ## Phần 6 — Vòng lặp chính: detect + track + count toàn video
 
-Ghép 3 module lại: mỗi frame → track → cập nhật counter → thu thập events.
+Ghép 3 module lại: mỗi frame track cập nhật counter thu thập events.
 """),
     code("""
 # Định nghĩa line đếm cho video demo (1764x948)
@@ -393,7 +393,7 @@ for frame_idx, res in enumerate(model.track(
     ids = res.boxes.id.cpu().numpy()
     classes = res.boxes.cls.cpu().numpy()
 
-    # Cập nhật counter → nhận events nếu có xe qua line
+    # Cập nhật counter nhận events nếu có xe qua line
     frame_events = counter.update(frame_idx, boxes, ids, classes)
 
     # Thêm timestamp + tên class vào events
@@ -407,7 +407,7 @@ print(f"\\nCounts theo line/direction/class:")
 for line_name, dirs in counter.counts.items():
     for direction, cls_counts in dirs.items():
         for cls_id, cnt in cls_counts.items():
-            print(f"  {line_name} - {direction} - {class_names[cls_id]}: {cnt}")
+            print(f" {line_name} - {direction} - {class_names[cls_id]}: {cnt}")
 """),
 
     # ============ 7. WRITE OUTPUT VIDEO ============
@@ -470,8 +470,8 @@ for frame_idx, res in enumerate(model.track(
     writer.write(frame_out)
 
 writer.release()
-print(f"[✓] Video output: {OUT_VIDEO}")
-print(f"    Size: {OUT_VIDEO.stat().st_size / 1024:.1f} KB")
+print(f"[] Video output: {OUT_VIDEO}")
+print(f" Size: {OUT_VIDEO.stat().st_size / 1024:.1f} KB")
 """),
     code("""
 # Xem video output
@@ -484,7 +484,7 @@ Video(str(OUT_VIDEO), embed=True, width=800)
 ---
 ## Phần 8 — Aggregate statistics với pandas (inline)
 
-Chuyển events list → DataFrame → group theo nhiều chiều.
+Chuyển events list DataFrame group theo nhiều chiều.
 
 **Không dùng `from src.stats.aggregator`** — implement inline.
 """),
@@ -517,7 +517,7 @@ def counts_per_bucket(df, bucket_sec):
     d["bucket"] = (d["time_sec"] // bucket_sec).astype(int)
     return d.groupby(["bucket", "class_name"]).size().unstack(fill_value=0)
 
-per_bucket_1s = counts_per_bucket(df, 1)  # mỗi 1 giây
+per_bucket_1s = counts_per_bucket(df, 1) # mỗi 1 giây
 print("Số lượt theo bucket 1 giây:")
 print(per_bucket_1s)
 """),
@@ -525,7 +525,7 @@ print(per_bucket_1s)
 # 5) Flow rate: xe/phút, xe/giờ
 def flow_rate(df, unit="minute"):
     duration = df["time_sec"].max() - df["time_sec"].min()
-    duration = max(duration, 1e-6)   # tránh chia 0
+    duration = max(duration, 1e-6) # tránh chia 0
     factor = 60.0 if unit == "minute" else 3600.0
     scale = factor / duration
     return {
@@ -536,7 +536,7 @@ def flow_rate(df, unit="minute"):
 
 fr_min = flow_rate(df, "minute")
 fr_hour = flow_rate(df, "hour")
-print(f"Xe/phút: {fr_min['total']}   Xe/giờ: {fr_hour['total']}")
+print(f"Xe/phút: {fr_min['total']} Xe/giờ: {fr_hour['total']}")
 print(f"Per class (xe/giờ): {fr_hour['per_class']}")
 """),
     code("""
@@ -635,9 +635,9 @@ def mape(preds, gts):
 
 
 # Test 3 hàm này
-preds = [85, 0, 0, 1]  # motorcycle, car, bus, truck (từ pipeline)
-gts   = [0, 80, 1, 6]  # ground truth
-print(f"MAE  = {mae(preds, gts):.2f}")
+preds = [85, 0, 0, 1] # motorcycle, car, bus, truck (từ pipeline)
+gts = [0, 80, 1, 6] # ground truth
+print(f"MAE = {mae(preds, gts):.2f}")
 print(f"MAPE = {mape(preds, gts):.1f}%")
 print(f"Acc per-class: {[counting_accuracy(p, g) for p, g in zip(preds, gts)]}")
 """),
@@ -651,7 +651,7 @@ gt_counts = {k: v for k, v in gt_data["counts_by_class"].items() if v > 0}
 pred_counts = df["class_name"].value_counts().to_dict()
 
 print(f"Ground truth: {gt_counts}")
-print(f"Prediction:   {pred_counts}")
+print(f"Prediction: {pred_counts}")
 
 # So sánh per-class
 all_classes = sorted(set(gt_counts) | set(pred_counts))
@@ -666,7 +666,7 @@ for c in all_classes:
     p_list.append(p)
     g_list.append(g)
 
-print(f"\\nMAE  = {mae(p_list, g_list):.2f}")
+print(f"\\nMAE = {mae(p_list, g_list):.2f}")
 print(f"MAPE = {mape(p_list, g_list):.1f}%")
 print(f"Overall accuracy (tổng) = {counting_accuracy(sum(p_list), sum(g_list)):.3f}")
 """),
@@ -680,8 +680,8 @@ Notebook đã đi qua **toàn bộ pipeline detect + track + count + eval**, vi�
 
 | Phần | Kỹ thuật | Code chính |
 |---|---|---|
-| Detection | YOLOv8s | `model.predict()` → boxes + cls + conf |
-| Tracking | ByteTrack | `model.track(persist=True)` → thêm `id` |
+| Detection | YOLOv8s | `model.predict()` boxes + cls + conf |
+| Tracking | ByteTrack | `model.track(persist=True)` thêm `id` |
 | Counting | Segment intersection + cross-product | `Counter.update()` với set chống trùng |
 | Direction | Cross-product line × movement | `crossing_direction()` |
 | Aggregate | pandas groupby | `df.groupby(["class_name","direction"])` |
@@ -720,9 +720,9 @@ def main():
     nbformat.validator.normalize(nb2)
     nbformat.write(nb2, str(OUT))
 
-    print(f"[✓] Đã sinh: {OUT}")
-    print(f"    Số cell: {len(CELLS)}")
-    print(f"    Kích thước: {OUT.stat().st_size / 1024:.1f} KB")
+    print(f"[] Đã sinh: {OUT}")
+    print(f" Số cell: {len(CELLS)}")
+    print(f" Kích thước: {OUT.stat().st_size / 1024:.1f} KB")
 
 
 if __name__ == "__main__":

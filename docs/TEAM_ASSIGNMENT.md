@@ -12,7 +12,7 @@
 
 **Deliverable:**
 - File `runs/detect/train/weights/best.pt`.
-- Bảng mAP per-class trên test set → `results/tables/detection_map.csv`.
+- Bảng mAP per-class trên test set `results/tables/detection_map.csv`.
 
 **Command mẫu:**
 ```bash
@@ -72,14 +72,14 @@ python -m src.tracking.track \
 **Việc cụ thể:**
 - Quay 2-3 video test tại ngã tư/đường VN (5-10 phút mỗi video).
 - Sinh template ground truth bằng `scripts/prepare_test_video.py`.
-- Đếm thủ công phương tiện qua từng line → điền vào JSON GT.
+- Đếm thủ công phương tiện qua từng line điền vào JSON GT.
 - Chạy pipeline `src/pipeline/run.py` end-to-end.
 - Tính Accuracy, MAE, MAPE bằng `src/evaluation/compare.py`.
 - Viết report tổng hợp so sánh 3 tracker (ByteTrack vs BoT-SORT vs no-tracker).
 
 **Deliverable:**
 - 2-3 video test có ground truth JSON.
-- Bảng so sánh Accuracy/MAE/MAPE giữa các cấu hình → `results/tables/evaluation.csv`.
+- Bảng so sánh Accuracy/MAE/MAPE giữa các cấu hình `results/tables/evaluation.csv`.
 
 **Command mẫu:**
 ```bash

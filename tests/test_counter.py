@@ -5,7 +5,7 @@ from src.tracking.counter import Counter, Line
 def test_single_crossing():
     line = Line(name="L", p1=(0, 100), p2=(200, 100))
     c = Counter(lines=[line])
-    # Track ID 1, class 0 (motorcycle), đi từ (100, 50) → (100, 150) qua line
+    # Track ID 1, class 0 (motorcycle), đi từ (100, 50) (100, 150) qua line
     c.update(0, [[95, 45, 105, 55]], [1], [0])
     c.update(1, [[95, 145, 105, 155]], [1], [0])
     assert c.counts["L"][0] == 1
@@ -17,7 +17,7 @@ def test_no_double_count():
     # Đi qua rồi quay lại — chỉ đếm 1 lần
     c.update(0, [[95, 45, 105, 55]], [1], [0])
     c.update(1, [[95, 145, 105, 155]], [1], [0])
-    c.update(2, [[95, 45, 105, 55]], [1], [0])  # quay lại
+    c.update(2, [[95, 45, 105, 55]], [1], [0]) # quay lại
     assert c.counts["L"][0] == 1
 
 

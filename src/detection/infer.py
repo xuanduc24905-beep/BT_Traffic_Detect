@@ -28,7 +28,7 @@ def main():
     model = load_model(args.weights)
     results = model.predict(source=args.source, conf=args.conf, iou=args.iou,
                             save=args.save, verbose=True)
-    print(f"[✓] Đã xử lý {len(results)} frame/ảnh.")
+    print(f"[] Đã xử lý {len(results)} frame/ảnh.")
 
 
 if __name__ == "__main__":

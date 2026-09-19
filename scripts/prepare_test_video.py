@@ -46,8 +46,8 @@ def main():
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(template, f, indent=2, ensure_ascii=False)
-    print(f"[✓] Template GT tại: {out_path}")
-    print(f"    Video {duration:.1f}s, {n_frames} frame, {w}×{h} @ {fps:.1f} fps")
+    print(f"[] Template GT tại: {out_path}")
+    print(f" Video {duration:.1f}s, {n_frames} frame, {w}×{h} @ {fps:.1f} fps")
 
 
 if __name__ == "__main__":

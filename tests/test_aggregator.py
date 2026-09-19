@@ -10,11 +10,11 @@ from src.stats.aggregator import (
 def _make_events():
     """Sinh 6 event mock trong 120 giây."""
     return [
-        {"frame": 0,   "time_sec": 5,   "line": "L", "track_id": 1, "class_name": "car"},
-        {"frame": 30,  "time_sec": 15,  "line": "L", "track_id": 2, "class_name": "car"},
-        {"frame": 60,  "time_sec": 30,  "line": "L", "track_id": 3, "class_name": "bus"},
-        {"frame": 90,  "time_sec": 65,  "line": "L", "track_id": 4, "class_name": "car"},
-        {"frame": 120, "time_sec": 90,  "line": "L", "track_id": 5, "class_name": "car"},
+        {"frame": 0, "time_sec": 5, "line": "L", "track_id": 1, "class_name": "car"},
+        {"frame": 30, "time_sec": 15, "line": "L", "track_id": 2, "class_name": "car"},
+        {"frame": 60, "time_sec": 30, "line": "L", "track_id": 3, "class_name": "bus"},
+        {"frame": 90, "time_sec": 65, "line": "L", "track_id": 4, "class_name": "car"},
+        {"frame": 120, "time_sec": 90, "line": "L", "track_id": 5, "class_name": "car"},
         {"frame": 150, "time_sec": 110, "line": "L", "track_id": 6, "class_name": "bus"},
     ]
 
@@ -29,8 +29,8 @@ def test_events_to_df_adds_time_columns():
 def test_counts_per_bucket_minute():
     df = events_to_df(_make_events())
     pivot = counts_per_bucket(df, 60)
-    # bucket 0 = 0-60s → 2 car + 1 bus
-    # bucket 1 = 60-120s → 2 car + 1 bus
+    # bucket 0 = 0-60s 2 car + 1 bus
+    # bucket 1 = 60-120s 2 car + 1 bus
     assert pivot.loc[0, "car"] == 2
     assert pivot.loc[0, "bus"] == 1
     assert pivot.loc[1, "car"] == 2
@@ -50,7 +50,7 @@ def test_flow_rate_units():
     df = events_to_df(_make_events())
     fr_min = flow_rate(df, "minute")
     fr_hour = flow_rate(df, "hour")
-    # duration = 110 - 5 = 105s → xe/phút = 6 * 60 / 105 ≈ 3.43
+    # duration = 110 - 5 = 105s xe/phút = 6 * 60 / 105 ≈ 3.43
     assert abs(fr_min["total"] - 6 * 60 / 105) < 0.1
     # xe/giờ = xe/phút * 60
     assert abs(fr_hour["total"] - fr_min["total"] * 60) < 1
@@ -59,7 +59,7 @@ def test_flow_rate_units():
 def test_peak_period_finds_max():
     df = events_to_df(_make_events())
     peak = peak_period(df, 60)
-    # 2 bucket đều = 3 → sẽ trả về bucket đầu tiên đạt max
+    # 2 bucket đều = 3 sẽ trả về bucket đầu tiên đạt max
     assert peak["peak_total"] == 3
 
 

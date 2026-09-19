@@ -2,12 +2,12 @@
 # Train YOLOv8s cho VN Traffic — tự auto-resume nếu đã có checkpoint.
 #
 # Chạy:
-#     ./scripts/train.sh              # auto: resume nếu có last.pt, ngược lại train mới
-#     ./scripts/train.sh fresh        # ép train từ đầu (ghi đè run cũ)
-#     ./scripts/train.sh resume       # ép resume, lỗi nếu không có last.pt
+# ./scripts/train.sh # auto: resume nếu có last.pt, ngược lại train mới
+# ./scripts/train.sh fresh # ép train từ đầu (ghi đè run cũ)
+# ./scripts/train.sh resume # ép resume, lỗi nếu không có last.pt
 #
 # Sau khi in PID, có thể chạy kèm watcher eval:
-#     nohup ./scripts/eval_after_training.sh <PID> > logs/eval_watcher.log 2>&1 &
+# nohup ./scripts/eval_after_training.sh <PID> > logs/eval_watcher.log 2>&1 &
 
 set -e
 cd "$(dirname "$0")/.."
@@ -33,7 +33,7 @@ case "$MODE" in
         ;;
     resume)
         if [ "$HAS_CKPT" = "no" ]; then
-            echo "[✗] Không có checkpoint để resume. Xoá 'resume' hoặc chạy 'fresh'."
+            echo "[] Không có checkpoint để resume. Xoá 'resume' hoặc chạy 'fresh'."
             exit 1
         fi
         DO_RESUME="yes"
@@ -78,7 +78,7 @@ PID=$!
 echo "PID: $PID"
 echo "Log: $LOG"
 echo ""
-echo "Kill:      kill $PID"
+echo "Kill: kill $PID"
 echo "Auto-eval: nohup ./scripts/eval_after_training.sh $PID > logs/eval_watcher.log 2>&1 &"
 echo ""
 echo "─── Live epoch progress (Ctrl+C để thoát view, training vẫn chạy nền) ───"

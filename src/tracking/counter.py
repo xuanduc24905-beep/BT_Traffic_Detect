@@ -1,14 +1,14 @@
 """Người 2 — Line/zone counter với chống đếm trùng bằng tracking ID.
 
-Ý tưởng: với mỗi ID, lưu tâm box của frame trước. Nếu segment nối tâm cũ → tâm
+Ý tưởng: với mỗi ID, lưu tâm box của frame trước. Nếu segment nối tâm cũ tâm
 mới cắt qua counting line, ID đó được đếm 1 lần cho line đó và ghi nhớ vào set
 đã-đếm để không đếm lại (kể cả nếu qua lại nhiều lần).
 
 Hướng đi (direction):
   - Với mỗi line có vector v = p2 - p1, ta lấy dấu cross-product
     (v × movement) để phân loại hướng qua line:
-      cross > 0 → 'ltr' (trái→phải theo chiều v)
-      cross < 0 → 'rtl' (phải→trái theo chiều v)
+      cross > 0 'ltr' (tráiphải theo chiều v)
+      cross < 0 'rtl' (phảitrái theo chiều v)
   - Line có count_direction ∈ {'both','ltr','rtl'} để chỉ đếm 1 chiều.
 """
 import json
@@ -19,9 +19,9 @@ from dataclasses import dataclass, field
 @dataclass
 class Line:
     name: str
-    p1: tuple  # (x, y)
+    p1: tuple # (x, y)
     p2: tuple
-    count_direction: str = "both"  # 'both' | 'ltr' | 'rtl'
+    count_direction: str = "both" # 'both' | 'ltr' | 'rtl'
 
 
 def load_lines(config_path: str, video_key: str) -> list[Line]:
@@ -56,7 +56,7 @@ def _crossing_direction(prev, curr, line: Line) -> str:
 @dataclass
 class Counter:
     lines: list[Line]
-    # counts[line_name][direction][class_id] = int  (direction ∈ {'ltr','rtl'})
+    # counts[line_name][direction][class_id] = int (direction ∈ {'ltr','rtl'})
     counts: dict = field(default_factory=lambda: defaultdict(
         lambda: defaultdict(lambda: defaultdict(int))))
     # đã đếm để tránh trùng: {(line_name, track_id)}

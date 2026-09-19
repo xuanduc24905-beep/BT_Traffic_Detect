@@ -1,4 +1,4 @@
-"""Người 3 — Gom số liệu từ pipeline tracking+counting → DataFrame + stats.
+"""Người 3 — Gom số liệu từ pipeline tracking+counting DataFrame + stats.
 
 Input format (event log CSV):
     frame, time_sec, line, track_id, class_name
@@ -17,7 +17,7 @@ from pathlib import Path
 
 
 def events_to_df(events) -> pd.DataFrame:
-    """Nhận list dict hoặc DataFrame → chuẩn hoá + enrich time columns."""
+    """Nhận list dict hoặc DataFrame chuẩn hoá + enrich time columns."""
     df = pd.DataFrame(events) if not isinstance(events, pd.DataFrame) else events.copy()
     if df.empty:
         return df
@@ -55,7 +55,7 @@ def summarize(df: pd.DataFrame) -> dict:
 
 
 def counts_by_direction(df: pd.DataFrame) -> pd.DataFrame:
-    """Bảng {line × direction} → tổng số lượt. Rỗng nếu không có cột direction."""
+    """Bảng {line × direction} tổng số lượt. Rỗng nếu không có cột direction."""
     if df.empty or "direction" not in df.columns:
         return pd.DataFrame()
     return (df.groupby(["line", "direction"]).size()
@@ -67,7 +67,7 @@ def counts_per_bucket(df: pd.DataFrame, bucket_sec: int,
                       class_order: list[str] | None = None) -> pd.DataFrame:
     """Pivot theo bucket giây. Hàng = bucket index, cột = class, giá trị = số lượt.
 
-    bucket_sec = 60 → theo phút.  = 3600 → theo giờ.  = 300 → theo 5 phút.
+    bucket_sec = 60 theo phút. = 3600 theo giờ. = 300 theo 5 phút.
     """
     if df.empty:
         return pd.DataFrame()

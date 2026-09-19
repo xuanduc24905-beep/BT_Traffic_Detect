@@ -1,12 +1,12 @@
-"""Import Vietnam Cần Thơ vehicle dataset (Roboflow yolov8 format) → merged/.
+"""Import Vietnam Cần Thơ vehicle dataset (Roboflow yolov8 format) merged/.
 
-Class remap (VN Cần Thơ 4-class → canonical 4-class):
-    0 bus       → 2 bus
-    1 car       → 1 car
-    2 motorbike → 0 motorcycle  ⭐ (đây là giá trị chính — bù thiếu motorcycle của UA-DETRAC)
-    3 truck     → 3 truck
+Class remap (VN Cần Thơ 4-class canonical 4-class):
+    0 bus 2 bus
+    1 car 1 car
+    2 motorbike 0 motorcycle (đây là giá trị chính — bù thiếu motorcycle của UA-DETRAC)
+    3 truck 3 truck
 
-Split mapping: Roboflow dùng "valid" thay "val" → chuyển về "val" cho khớp UA-DETRAC.
+Split mapping: Roboflow dùng "valid" thay "val" chuyển về "val" cho khớp UA-DETRAC.
 
 File output có prefix `cantho_` để phân biệt với DETRAC (không đụng nhau).
 
@@ -82,7 +82,7 @@ def process_split(src_split_dir, dst_split, out_root, mapping, dry_run):
                 f.write("\n".join(new_lines) + "\n")
         n += 1
 
-    print(f"[✓] {src_split_dir.name} → {dst_split}: {n} ảnh")
+    print(f"[] {src_split_dir.name} {dst_split}: {n} ảnh")
     return n
 
 
@@ -103,10 +103,10 @@ def main():
     with open(args.mapping) as f:
         mapping = json.load(f)["cantho_vn"]
 
-    print("=== IMPORT CanTho VN → data/merged ===")
-    print(f"  Source     : {src}")
-    print(f"  Output     : {args.out}")
-    print(f"  Mapping    : {mapping}")
+    print("=== IMPORT CanTho VN data/merged ===")
+    print(f" Source : {src}")
+    print(f" Output : {args.out}")
+    print(f" Mapping : {mapping}")
     print()
 
     out_root = Path(args.out)
@@ -120,7 +120,7 @@ def main():
                                mapping, args.dry_run)
 
     print()
-    print(f"[✓] TỔNG: {total} ảnh Cần Thơ đã import")
+    print(f"[] TỔNG: {total} ảnh Cần Thơ đã import")
     if args.dry_run:
         print("[i] Dry-run — chưa tạo file thật.")
     return 0

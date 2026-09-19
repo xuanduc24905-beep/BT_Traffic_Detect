@@ -2,7 +2,7 @@
 
 Dataset gốc cần đặt sẵn trong data/raw/{ua_detrac,roboflow_vn,visdrone}/ với
 cấu trúc chuẩn YOLO (images/ + labels/). Script sẽ:
-  1. Đọc class_mapping.json để remap class id gốc → id chuẩn 5 lớp.
+  1. Đọc class_mapping.json để remap class id gốc id chuẩn 5 lớp.
   2. Copy ảnh + rewrite label file với id mới.
   3. Split ngẫu nhiên 70/15/15 (train/val/test), stratified per-source.
 
@@ -65,8 +65,8 @@ def process_source(src_root: Path, source_name: str, out_root: Path,
     n_val = int(n * split_ratio[1])
     splits = {
         "train": pairs[:n_train],
-        "val":   pairs[n_train:n_train + n_val],
-        "test":  pairs[n_train + n_val:],
+        "val": pairs[n_train:n_train + n_val],
+        "test": pairs[n_train + n_val:],
     }
 
     total_kept = 0
@@ -81,7 +81,7 @@ def process_source(src_root: Path, source_name: str, out_root: Path,
             out_img.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(img, out_img)
             total_kept += 1
-    print(f"[✓] {source_name}: giữ {total_kept}/{n} ảnh sau remap.")
+    print(f"[] {source_name}: giữ {total_kept}/{n} ảnh sau remap.")
     return total_kept
 
 
@@ -109,8 +109,8 @@ def main():
             continue
         total += process_source(src_root, src, out, mapping_all)
 
-    print(f"\n[✓] Tổng số ảnh trong dataset gộp: {total}")
-    print(f"[✓] Output: {out}")
+    print(f"\n[] Tổng số ảnh trong dataset gộp: {total}")
+    print(f"[] Output: {out}")
     print(f"[i] Cập nhật data/data.yaml nếu path khác.")
 
 

@@ -1,7 +1,7 @@
 """Evaluation 2 tầng cho model detection + counting.
 
 Tầng A — Detection quality:
-    YOLO.val() trên test split có label sẵn → mAP@0.5, mAP@0.5:0.95, P, R per-class.
+    YOLO.val() trên test split có label sẵn mAP@0.5, mAP@0.5:0.95, P, R per-class.
     Đây là standard ML benchmark, không cần GT thủ công.
 
 Tầng B — Counting quality (task-level):
@@ -115,22 +115,22 @@ def main():
             print("[A] mAP trên test set...")
             model_res["mAP"] = tang_a_mAP(m, args.data)
             if "skipped" in model_res["mAP"]:
-                print(f"    skip: {model_res['mAP']['skipped']}")
+                print(f" skip: {model_res['mAP']['skipped']}")
             else:
                 a = model_res["mAP"]
-                print(f"    mAP@0.5={a['mAP50']:.3f}  mAP@0.5-0.95={a['mAP50_95']:.3f}  "
-                      f"P={a['precision']:.3f}  R={a['recall']:.3f}")
+                print(f" mAP@0.5={a['mAP50']:.3f} mAP@0.5-0.95={a['mAP50_95']:.3f} "
+                      f"P={a['precision']:.3f} R={a['recall']:.3f}")
 
         print("[B] Counting trên video GT...")
         model_res["counting"] = []
         for video, gt in DEFAULT_VIDEO_GT:
-            print(f"    - {Path(video).name}")
+            print(f" - {Path(video).name}")
             r = tang_b_counting(m, video, gt)
             model_res["counting"].append({"video": video, **r})
             rep = r["report"]
-            print(f"      pred={r['pred']}  gt={r['gt']}")
-            print(f"      overall_acc={rep['overall_accuracy']:.3f}  "
-                  f"MAE={rep['MAE']:.2f}  MAPE={rep['MAPE_percent']:.1f}%  "
+            print(f" pred={r['pred']} gt={r['gt']}")
+            print(f" overall_acc={rep['overall_accuracy']:.3f} "
+                  f"MAE={rep['MAE']:.2f} MAPE={rep['MAPE_percent']:.1f}% "
                   f"({r['runtime_sec']}s)")
 
         results[m] = model_res
@@ -138,7 +138,7 @@ def main():
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     with open(args.out, "w") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
-    print(f"\n[✓] Lưu: {args.out}")
+    print(f"\n[] Lưu: {args.out}")
 
 
 if __name__ == "__main__":

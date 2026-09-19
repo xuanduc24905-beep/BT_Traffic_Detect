@@ -225,43 +225,43 @@ def main():
     # ==========================================================
     add_h(doc, "MỤC LỤC", level=1)
     add_p(doc,
-          "(Sau khi mở file trong Microsoft Word: đặt con trỏ vào đây → tab References → "
-          "Table of Contents → Insert Table of Contents. Word sẽ tự sinh mục lục từ các "
+          "(Sau khi mở file trong Microsoft Word: đặt con trỏ vào đây tab References "
+          "Table of Contents Insert Table of Contents. Word sẽ tự sinh mục lục từ các "
           "heading trong tài liệu.)", italic=True, indent_first=False)
 
     contents = [
         "DANH MỤC HÌNH ẢNH",
         "DANH MỤC BẢNG",
         "CHƯƠNG 1. GIỚI THIỆU",
-        "  1.1. Đặt vấn đề",
-        "  1.2. Mục tiêu và phạm vi",
-        "  1.3. Đóng góp của nhóm",
+        " 1.1. Đặt vấn đề",
+        " 1.2. Mục tiêu và phạm vi",
+        " 1.3. Đóng góp của nhóm",
         "CHƯƠNG 2. CƠ SỞ LÝ THUYẾT",
-        "  2.1. Object Detection và YOLOv8",
-        "  2.2. Multi-Object Tracking và ByteTrack",
-        "  2.3. Bài toán counting theo line/zone",
-        "  2.4. Metrics đánh giá",
+        " 2.1. Object Detection và YOLOv8",
+        " 2.2. Multi-Object Tracking và ByteTrack",
+        " 2.3. Bài toán counting theo line/zone",
+        " 2.4. Metrics đánh giá",
         "CHƯƠNG 3. PHƯƠNG PHÁP ĐỀ XUẤT",
-        "  3.1. Kiến trúc pipeline",
-        "  3.2. Module Detection",
-        "  3.3. Module Tracking",
-        "  3.4. Module Counting với direction",
-        "  3.5. Module Aggregation và Visualization",
-        "  3.6. Module Evaluation",
+        " 3.1. Kiến trúc pipeline",
+        " 3.2. Module Detection",
+        " 3.3. Module Tracking",
+        " 3.4. Module Counting với direction",
+        " 3.5. Module Aggregation và Visualization",
+        " 3.6. Module Evaluation",
         "CHƯƠNG 4. CÀI ĐẶT HỆ THỐNG",
-        "  4.1. Công nghệ và môi trường",
-        "  4.2. Chuẩn bị dữ liệu",
-        "  4.3. Quá trình training",
-        "  4.4. Streamlit Web UI",
+        " 4.1. Công nghệ và môi trường",
+        " 4.2. Chuẩn bị dữ liệu",
+        " 4.3. Quá trình training",
+        " 4.4. Streamlit Web UI",
         "CHƯƠNG 5. KẾT QUẢ THỰC NGHIỆM",
-        "  5.1. Kết quả training",
-        "  5.2. Kết quả detection (mAP)",
-        "  5.3. Kết quả counting trên video",
-        "  5.4. So sánh với baseline",
+        " 5.1. Kết quả training",
+        " 5.2. Kết quả detection (mAP)",
+        " 5.3. Kết quả counting trên video",
+        " 5.4. So sánh với baseline",
         "CHƯƠNG 6. ĐÁNH GIÁ VÀ THẢO LUẬN",
-        "  6.1. Ưu điểm",
-        "  6.2. Hạn chế",
-        "  6.3. Hướng cải thiện",
+        " 6.1. Ưu điểm",
+        " 6.2. Hạn chế",
+        " 6.3. Hướng cải thiện",
         "CHƯƠNG 7. KẾT LUẬN",
         "TÀI LIỆU THAM KHẢO",
         "PHỤ LỤC A. NỘI DUNG SLIDE THUYẾT TRÌNH",
@@ -443,39 +443,39 @@ def main():
 
     add_code(doc,
              "Video (MP4/AVI)\n"
-             "     │\n"
-             "     ▼\n"
+             " │\n"
+             " ▼\n"
              "┌─────────────────────────────────────────────┐\n"
-             "│ [1] DETECTION  — YOLOv8s                    │\n"
-             "│     Output: boxes (x1,y1,x2,y2), class, conf│\n"
+             "│ [1] DETECTION — YOLOv8s │\n"
+             "│ Output: boxes (x1,y1,x2,y2), class, conf│\n"
              "└─────────────────────────────────────────────┘\n"
-             "     │\n"
-             "     ▼\n"
+             " │\n"
+             " ▼\n"
              "┌─────────────────────────────────────────────┐\n"
-             "│ [2] TRACKING   — ByteTrack                  │\n"
-             "│     Output: track_id ổn định qua frames     │\n"
+             "│ [2] TRACKING — ByteTrack │\n"
+             "│ Output: track_id ổn định qua frames │\n"
              "└─────────────────────────────────────────────┘\n"
-             "     │\n"
-             "     ▼\n"
+             " │\n"
+             " ▼\n"
              "┌─────────────────────────────────────────────┐\n"
-             "│ [3] COUNTING   — Line + direction           │\n"
-             "│     Output: event {frame, line, direction,  │\n"
-             "│             track_id, class}                │\n"
+             "│ [3] COUNTING — Line + direction │\n"
+             "│ Output: event {frame, line, direction, │\n"
+             "│ track_id, class} │\n"
              "└─────────────────────────────────────────────┘\n"
-             "     │\n"
-             "     ▼\n"
+             " │\n"
+             " ▼\n"
              "┌─────────────────────────────────────────────┐\n"
-             "│ [4] AGGREGATE  — Pandas DataFrame           │\n"
-             "│     Output: bucket time × class × direction │\n"
+             "│ [4] AGGREGATE — Pandas DataFrame │\n"
+             "│ Output: bucket time × class × direction │\n"
              "└─────────────────────────────────────────────┘\n"
-             "     │\n"
-             "     ▼\n"
+             " │\n"
+             " ▼\n"
              "┌─────────────────────────────────────────────┐\n"
-             "│ [5] VISUALIZE  — Matplotlib                 │\n"
-             "│     Output: bar / heatmap / line chart PNG  │\n"
+             "│ [5] VISUALIZE — Matplotlib │\n"
+             "│ Output: bar / heatmap / line chart PNG │\n"
              "└─────────────────────────────────────────────┘\n"
-             "     │\n"
-             "     ▼\n"
+             " │\n"
+             " ▼\n"
              "Video annotated + CSV events + biểu đồ + JSON summary")
 
     add_h(doc, "3.2. Module Detection", level=2)
@@ -513,29 +513,29 @@ def main():
     add_p(doc, "Pseudocode:", bold=True, indent_first=False)
     add_code(doc,
              "class Counter:\n"
-             "    def update(frame_idx, boxes, ids, classes):\n"
-             "        for box, tid, cls in zip(boxes, ids, classes):\n"
-             "            curr = center(box)\n"
-             "            prev = prev_center.get(tid)\n"
-             "            if prev is not None:\n"
-             "                for line in lines:\n"
-             "                    if (line.name, tid) in _counted:\n"
-             "                        continue\n"
-             "                    if not segments_cross(prev, curr, line.p1, line.p2):\n"
-             "                        continue\n"
-             "                    # Xác định hướng bằng cross-product\n"
-             "                    v_line = line.p2 - line.p1\n"
-             "                    v_move = curr - prev\n"
-             "                    cross  = v_line.x * v_move.y - v_line.y * v_move.x\n"
-             "                    direction = 'ltr' if cross > 0 else 'rtl'\n"
-             "                    # Filter theo config\n"
-             "                    if line.count_direction not in ('both', direction):\n"
-             "                        _counted.add((line.name, tid))  # skip nhưng đánh dấu\n"
-             "                        continue\n"
-             "                    # ĐẾM\n"
-             "                    counts[line.name][direction][cls] += 1\n"
-             "                    _counted.add((line.name, tid))\n"
-             "            prev_center[tid] = curr")
+             " def update(frame_idx, boxes, ids, classes):\n"
+             " for box, tid, cls in zip(boxes, ids, classes):\n"
+             " curr = center(box)\n"
+             " prev = prev_center.get(tid)\n"
+             " if prev is not None:\n"
+             " for line in lines:\n"
+             " if (line.name, tid) in _counted:\n"
+             " continue\n"
+             " if not segments_cross(prev, curr, line.p1, line.p2):\n"
+             " continue\n"
+             " # Xác định hướng bằng cross-product\n"
+             " v_line = line.p2 - line.p1\n"
+             " v_move = curr - prev\n"
+             " cross = v_line.x * v_move.y - v_line.y * v_move.x\n"
+             " direction = 'ltr' if cross > 0 else 'rtl'\n"
+             " # Filter theo config\n"
+             " if line.count_direction not in ('both', direction):\n"
+             " _counted.add((line.name, tid)) # skip nhưng đánh dấu\n"
+             " continue\n"
+             " # ĐẾM\n"
+             " counts[line.name][direction][cls] += 1\n"
+             " _counted.add((line.name, tid))\n"
+             " prev_center[tid] = curr")
 
     add_h(doc, "3.5. Module Aggregation và Visualization", level=2)
     add_p(doc,
@@ -602,16 +602,16 @@ def main():
     add_p(doc, "Quy trình chuẩn hoá schema (import script):", bold=True, indent_first=False)
     add_code(doc,
              "Canonical schema: {0: motorcycle, 1: car, 2: bus, 3: truck}\n\n"
-             "UA-DETRAC (car/bus/van/others) → canonical:\n"
-             "  0 car    → 1 car\n"
-             "  1 bus    → 2 bus\n"
-             "  2 van    → 3 truck   (van có hình dáng gần truck nhất)\n"
-             "  3 others → BỎ (rác)\n\n"
-             "VN Cần Thơ (bus/car/motorbike/truck) → canonical:\n"
-             "  0 bus       → 2 bus\n"
-             "  1 car       → 1 car\n"
-             "  2 motorbike → 0 motorcycle  ★ giá trị chính từ VN\n"
-             "  3 truck     → 3 truck")
+             "UA-DETRAC (car/bus/van/others) canonical:\n"
+             " 0 car 1 car\n"
+             " 1 bus 2 bus\n"
+             " 2 van 3 truck (van có hình dáng gần truck nhất)\n"
+             " 3 others BỎ (rác)\n\n"
+             "VN Cần Thơ (bus/car/motorbike/truck) canonical:\n"
+             " 0 bus 2 bus\n"
+             " 1 car 1 car\n"
+             " 2 motorbike 0 motorcycle giá trị chính từ VN\n"
+             " 3 truck 3 truck")
 
     add_p(doc, "Class distribution sau merge (train split):", bold=True, indent_first=False)
     add_table(doc,
@@ -654,11 +654,11 @@ def main():
           "UI bằng Streamlit với 3 tab:")
     for x in [
         "Tab 'Chạy pipeline': upload video, chọn model, điều chỉnh confidence/IoU/imgsz, "
-        "vị trí line đếm, hướng đếm → chạy pipeline → xem video output có overlay counter.",
-        "Tab 'Thống kê': chọn bucket thời gian (30s → 1h), xem biểu đồ bar/line/heatmap, "
+        "vị trí line đếm, hướng đếm chạy pipeline xem video output có overlay counter.",
+        "Tab 'Thống kê': chọn bucket thời gian (30s 1h), xem biểu đồ bar/line/heatmap, "
         "flow rate, peak period, so sánh giữa các line, cumulative count.",
-        "Tab 'Đánh giá': upload GT JSON hoặc điền tay → tính accuracy/MAE/MAPE per-class "
-        "và tổng → download report JSON.",
+        "Tab 'Đánh giá': upload GT JSON hoặc điền tay tính accuracy/MAE/MAPE per-class "
+        "và tổng download report JSON.",
     ]:
         add_bullet(doc, x)
     add_p(doc, "Chạy: streamlit run ui/streamlit_app.py",
@@ -754,7 +754,7 @@ def main():
               [
                   ["Số params", "3.0 M", "11.2 M"],
                   ["Số epoch training", "3", "50"],
-                  ["Class motorcycle", "❌ Không", "✅ Có (mAP 0.871)"],
+                  ["Class motorcycle", " Không", " Có (mAP 0.871)"],
                   ["mAP@0.5 test set", "0.009*", "0.843"],
                   ["Precision", "0.045", "0.886"],
                   ["Recall", "0.155", "0.777"],
@@ -894,20 +894,20 @@ def main():
             "Phần mở rộng đã làm: merge dataset VN, direction counting, UI Streamlit, ...",
         ]),
         ("Slide 3 — Pipeline tổng quan", "Người 1 (~1.5 phút)", [
-            "Sơ đồ 5 bước: Detection → Tracking → Counting → Aggregate → Visualize",
+            "Sơ đồ 5 bước: Detection Tracking Counting Aggregate Visualize",
             "Input: video MP4. Output: video annotated + CSV + biểu đồ + JSON summary",
             "Chèn diagram pipeline (từ Chương 3.1 của báo cáo)",
         ]),
         ("Slide 4 — Detection: YOLOv8s", "Người 1 (~1.5 phút)", [
             "YOLOv8 do Ultralytics phát hành 2023, single-stage anchor-free",
             "Chọn YOLOv8s (11M params) — cân bằng speed/accuracy",
-            "Fine-tune từ COCO pretrained → 4 class VN",
+            "Fine-tune từ COCO pretrained 4 class VN",
             "Metric training: mAP@0.5 = 0.843",
         ]),
         ("Slide 5 — Dataset merge", "Người 1 (~1.5 phút)", [
             "UA-DETRAC: 68k train, 4-class {car,bus,van,others} — data lớn nhưng thiếu xe máy",
             "VN Cần Thơ (Roboflow): 674 train, 4-class {bus,car,motorbike,truck}",
-            "Merge → schema canonical 4-class {motorcycle, car, bus, truck}",
+            "Merge schema canonical 4-class {motorcycle, car, bus, truck}",
             "Class balance sau merge: bảng số lượng instances",
             "Chèn ảnh 1-2 sample data VN có xe máy",
         ]),
@@ -920,7 +920,7 @@ def main():
         ("Slide 7 — Direction counting (điểm mở rộng)", "Người 2 (~1.5 phút)", [
             "Vấn đề: một line 2 chiều, cần biết xe đi vào hay ra",
             "Giải pháp: cross-product line_vector × movement_vector",
-            "Dấu cross-product > 0 → 'ltr'; < 0 → 'rtl'",
+            "Dấu cross-product > 0 'ltr'; < 0 'rtl'",
             "Cấu hình count_direction: 'both' | 'ltr' | 'rtl'",
             "Chèn diagram cross-product minh hoạ",
         ]),
@@ -998,13 +998,13 @@ def main():
     add_h(doc, "B.4. Chạy pipeline trên video", level=2)
     add_code(doc,
              "python -m src.pipeline.run \\\n"
-             "    --video data/test_videos/raw/demo_traffic.mp4 \\\n"
-             "    --weights weights/v8s_4cls_best.pt \\\n"
-             "    --counting-config configs/counting_zones.json \\\n"
-             "    --video-key demo_traffic \\\n"
-             "    --out-csv results/tables/demo_events.csv \\\n"
-             "    --out-video results/videos/demo_out.mp4 \\\n"
-             "    --half")
+             " --video data/test_videos/raw/demo_traffic.mp4 \\\n"
+             " --weights weights/v8s_4cls_best.pt \\\n"
+             " --counting-config configs/counting_zones.json \\\n"
+             " --video-key demo_traffic \\\n"
+             " --out-csv results/tables/demo_events.csv \\\n"
+             " --out-video results/videos/demo_out.mp4 \\\n"
+             " --half")
 
     add_h(doc, "B.5. Web UI Streamlit", level=2)
     add_code(doc, "streamlit run ui/streamlit_app.py")
@@ -1018,8 +1018,8 @@ def main():
 
     # Save
     doc.save(str(OUT_PATH))
-    print(f"[✓] Đã sinh: {OUT_PATH}")
-    print(f"    Kích thước: {OUT_PATH.stat().st_size / 1024:.1f} KB")
+    print(f"[] Đã sinh: {OUT_PATH}")
+    print(f" Kích thước: {OUT_PATH.stat().st_size / 1024:.1f} KB")
 
 
 if __name__ == "__main__":

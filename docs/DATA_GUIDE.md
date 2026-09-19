@@ -13,10 +13,10 @@ ln -s /home/xuand/yolov8_finetune/data/processed/labels data/raw/ua_detrac/label
 ```
 
 **Class mapping** (cấu hình trong `configs/class_mapping.json`):
-- 0 (DETRAC) → car
-- 1 → bus
-- 2 → truck
-- 3 (others) → null (bỏ)
+- 0 (DETRAC) car
+- 1 bus
+- 2 truck
+- 3 (others) null (bỏ)
 
 ## 2. Roboflow — Vietnamese Traffic Vehicles
 
@@ -50,10 +50,10 @@ cd data/raw/visdrone
 ```
 
 **Class mapping** (VisDrone gốc 10 class):
-- 0 (ignored), 1 (pedestrian) → null
-- 2 → bicycle, 3 → car, 4 → van→car, 5 → truck
-- 6 (tricycle), 7 (awning-tricycle) → null
-- 8 → bus, 9 → motorcycle
+- 0 (ignored), 1 (pedestrian) null
+- 2 bicycle, 3 car, 4 vancar, 5 truck
+- 6 (tricycle), 7 (awning-tricycle) null
+- 8 bus, 9 motorcycle
 
 ## 4. Video test VN (Người 4 tự quay)
 
@@ -79,7 +79,7 @@ python scripts/merge_datasets.py
 
 Kiểm tra:
 ```bash
-find data/merged/images -type f | wc -l   # tổng số ảnh
-ls data/merged/images/train | head        # sample
-cat data/data.yaml                        # config 5 class đã có sẵn
+find data/merged/images -type f | wc -l # tổng số ảnh
+ls data/merged/images/train | head # sample
+cat data/data.yaml # config 5 class đã có sẵn
 ```

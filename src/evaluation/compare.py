@@ -55,14 +55,14 @@ def main():
         print(f"{cls:<12} {r['pred']:>6} {r['gt']:>6} {r['abs_err']:>6} {r['accuracy']:>7.3f}")
     print("-" * 42)
     print(f"{'TOTAL':<12} {rep['total_pred']:>6} {rep['total_gt']:>6}")
-    print(f"\nMAE                = {rep['MAE']:.3f}")
-    print(f"MAPE               = {rep['MAPE_percent']:.2f} %")
-    print(f"Overall accuracy   = {rep['overall_accuracy']:.3f}")
+    print(f"\nMAE = {rep['MAE']:.3f}")
+    print(f"MAPE = {rep['MAPE_percent']:.2f} %")
+    print(f"Overall accuracy = {rep['overall_accuracy']:.3f}")
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     with open(args.out, "w") as f:
         json.dump(rep, f, indent=2, ensure_ascii=False)
-    print(f"\n[✓] Đã lưu: {args.out}")
+    print(f"\n[] Đã lưu: {args.out}")
 
 
 if __name__ == "__main__":

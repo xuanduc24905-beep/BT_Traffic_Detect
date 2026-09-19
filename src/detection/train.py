@@ -53,12 +53,12 @@ def main():
         if len(matches) > 1:
             print(f"[!] Nhiều last.pt cho '{args.name}':")
             for m in matches:
-                print(f"    {m}  ({m.stat().st_mtime})")
+                print(f" {m} ({m.stat().st_mtime})")
             print(f"[i] Chọn cái mới nhất: {last_pt}")
         print(f"[↻] Resume từ: {last_pt}")
         model = YOLO(str(last_pt))
         model.train(resume=True)
-        print(f"[✓] Best weight: {last_pt.parent / 'best.pt'}")
+        print(f"[] Best weight: {last_pt.parent / 'best.pt'}")
         return
 
     model = YOLO(args.pretrained)
@@ -78,7 +78,7 @@ def main():
         seed=42,
         exist_ok=True,
     )
-    print(f"[✓] Best weight: {Path(args.project) / args.name / 'weights' / 'best.pt'}")
+    print(f"[] Best weight: {Path(args.project) / args.name / 'weights' / 'best.pt'}")
 
 
 if __name__ == "__main__":

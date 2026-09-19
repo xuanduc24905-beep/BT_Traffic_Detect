@@ -1,6 +1,6 @@
 """Sinh notebooks/MASTER_full_project.ipynb — notebook toàn dự án.
 
-Full project trong 1 notebook, từ dataset → train → eval → deploy:
+Full project trong 1 notebook, từ dataset train eval deploy:
 1. Giới thiệu project + topic
 2. Khám phá dataset (UA-DETRAC + VN Cần Thơ)
 3. Merge dataset + class mapping (chạy được)
@@ -41,41 +41,41 @@ CELLS = []
 # HEADER
 # ============================================================
 CELLS.append(md("""
-# 🚦 MASTER Notebook — Toàn Dự Án Đếm Xe Giao Thông Việt Nam
+# MASTER Notebook — Toàn Dự Án Đếm Xe Giao Thông Việt Nam
 
 **Chủ đề 10 — Bài tập lớn Computer Vision**
 
-> Notebook toàn tập từ chuẩn bị dataset → training → evaluation → deploy.
+> Notebook toàn tập từ chuẩn bị dataset training evaluation deploy.
 > Đọc từ trên xuống dưới sẽ hiểu **toàn bộ dự án**. Có thể chạy từng cell hoặc chạy hết.
 
 ---
 
-### 📋 Mục lục
+### Mục lục
 
 | # | Phần | Mất bao lâu | Chạy được? |
 |---|---|---|---|
-| 0 | Setup môi trường | 30 giây | ✅ |
-| 1 | Khám phá dataset (UA-DETRAC + VN Cần Thơ) | 1 phút | ✅ |
-| 2 | Merge dataset + class mapping | 2-3 phút | ✅ (đã có sẵn `data/merged/`) |
-| 3 | Training YOLOv8s (có code + option skip) | ~5 giờ 30 phút | ⏭ Skip (dùng weight đã train) |
-| 4 | Phân tích training results (loss + mAP curves) | 5 giây | ✅ (đọc `results.csv`) |
-| 5 | Confusion matrix + per-class breakdown | 5 giây | ✅ |
-| 6 | Load model → detect 1 ảnh mẫu | 5 giây | ✅ |
-| 7 | Tracking với ByteTrack | 15 giây | ✅ |
-| 8 | Counter class inline + thuật toán | 5 giây | ✅ |
-| 9 | Pipeline đầy đủ + xuất video annotated | 15-30 giây | ✅ |
-| 10 | Aggregate + 5 loại chart | 5 giây | ✅ |
-| 11 | Evaluation 2 tầng vs baseline | 30 giây | ✅ |
-| 12 | Streamlit UI (giới thiệu) | 0 | 📖 Đọc |
-| 13 | Kết luận + hướng phát triển | 0 | 📖 Đọc |
+| 0 | Setup môi trường | 30 giây | |
+| 1 | Khám phá dataset (UA-DETRAC + VN Cần Thơ) | 1 phút | |
+| 2 | Merge dataset + class mapping | 2-3 phút | (đã có sẵn `data/merged/`) |
+| 3 | Training YOLOv8s (có code + option skip) | ~5 giờ 30 phút | Skip (dùng weight đã train) |
+| 4 | Phân tích training results (loss + mAP curves) | 5 giây | (đọc `results.csv`) |
+| 5 | Confusion matrix + per-class breakdown | 5 giây | |
+| 6 | Load model detect 1 ảnh mẫu | 5 giây | |
+| 7 | Tracking với ByteTrack | 15 giây | |
+| 8 | Counter class inline + thuật toán | 5 giây | |
+| 9 | Pipeline đầy đủ + xuất video annotated | 15-30 giây | |
+| 10 | Aggregate + 5 loại chart | 5 giây | |
+| 11 | Evaluation 2 tầng vs baseline | 30 giây | |
+| 12 | Streamlit UI (giới thiệu) | 0 | Đọc |
+| 13 | Kết luận + hướng phát triển | 0 | Đọc |
 
-### 🎯 Kết quả tóm tắt
+### Kết quả tóm tắt
 
 - **Model**: YOLOv8s (11M params), 4 class {motorcycle, car, bus, truck}
 - **Dataset merged**: 68,547 train / 14,344 val / 56,381 test ảnh
 - **Training**: 50 epochs, 5h 30 phút trên RTX 3500 Ada
 - **mAP@0.5 tổng**: **0.843** trên test set 56k ảnh
-- **mAP motorcycle**: **0.871** ⭐ (thành công nhờ dataset VN)
+- **mAP motorcycle**: **0.871** (thành công nhờ dataset VN)
 """))
 
 # ============================================================
@@ -107,10 +107,10 @@ if PROJECT_ROOT.name == "notebooks":
     PROJECT_ROOT = PROJECT_ROOT.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-print(f"PyTorch     : {torch.__version__}")
-print(f"CUDA        : {torch.cuda.is_available()} — {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'N/A'}")
+print(f"PyTorch : {torch.__version__}")
+print(f"CUDA : {torch.cuda.is_available()} — {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'N/A'}")
 print(f"Ultralytics : {ultralytics.__version__}")
-print(f"OpenCV      : {cv2.__version__}")
+print(f"OpenCV : {cv2.__version__}")
 print(f"Project root: {PROJECT_ROOT}")
 """))
 
@@ -126,7 +126,7 @@ Dự án dùng **2 nguồn dataset**:
 | Nguồn | Số ảnh | Class gốc | Đặc điểm |
 |---|---|---|---|
 | **UA-DETRAC** | 68k / 14k / 56k | car, bus, van, others | Highway TQ, ảnh nhiều nhưng thiếu xe máy |
-| **Vietnam Cần Thơ (Roboflow v19)** | 674 / 216 / 214 | bus, car, motorbike, truck | Đường phố VN — **có xe máy** ⭐ |
+| **Vietnam Cần Thơ (Roboflow v19)** | 674 / 216 / 214 | bus, car, motorbike, truck | Đường phố VN — **có xe máy** |
 
 Sau khi merge và chuẩn hoá schema, ta có schema thống nhất 4-class: `{0: motorcycle, 1: car, 2: bus, 3: truck}`.
 """))
@@ -137,7 +137,7 @@ with open(PROJECT_ROOT / "data/data.yaml") as f:
     cfg = yaml.safe_load(f)
 print("data.yaml:")
 for k, v in cfg.items():
-    print(f"  {k}: {v}")
+    print(f" {k}: {v}")
 """))
 CELLS.append(code("""
 # Kiểm class distribution trong merged dataset
@@ -208,17 +208,17 @@ Hai dataset gốc có schema khác nhau. Ta cần **remap** class IDs của cả
 ```
 Canonical: {0: motorcycle, 1: car, 2: bus, 3: truck}
 
-UA-DETRAC (car/bus/van/others) → canonical:
-  0 car    → 1 car
-  1 bus    → 2 bus
-  2 van    → 3 truck   ← van gộp vào truck (hình dáng gần nhất)
-  3 others → BỎ (không có ý nghĩa cho topic)
+UA-DETRAC (car/bus/van/others) canonical:
+  0 car 1 car
+  1 bus 2 bus
+  2 van 3 truck van gộp vào truck (hình dáng gần nhất)
+  3 others BỎ (không có ý nghĩa cho topic)
 
-VN Cần Thơ (bus/car/motorbike/truck) → canonical:
-  0 bus       → 2 bus
-  1 car       → 1 car
-  2 motorbike → 0 motorcycle  ⭐ giá trị chính từ VN
-  3 truck     → 3 truck
+VN Cần Thơ (bus/car/motorbike/truck) canonical:
+  0 bus 2 bus
+  1 car 1 car
+  2 motorbike 0 motorcycle giá trị chính từ VN
+  3 truck 3 truck
 ```
 
 ### Import scripts đã có sẵn:
@@ -237,7 +237,7 @@ if not merged_exists:
     os.system(f"cd {PROJECT_ROOT} && python scripts/import_ua_detrac.py")
     os.system(f"cd {PROJECT_ROOT} && python scripts/import_cantho_vn.py")
 else:
-    print("→ Skip merge (đã tồn tại).")
+    print(" Skip merge (đã tồn tại).")
 """))
 CELLS.append(code("""
 # Xem 1 sample từ mỗi dataset để so
@@ -275,10 +275,10 @@ Cấu hình training cuối cùng của nhóm:
 | Cache | RAM (~20GB) | Giảm 40% thời gian |
 | Optimizer | auto (SGD lr=0.01) | Ultralytics tự chọn |
 
-**Đã có sẵn `weights/v8s_4cls_best.pt`** → cell dưới **KHÔNG chạy** mà chỉ giữ code để tham khảo.
+**Đã có sẵn `weights/v8s_4cls_best.pt`** cell dưới **KHÔNG chạy** mà chỉ giữ code để tham khảo.
 """))
 CELLS.append(code('''
-# ⚠️ Cell này KHÔNG được chạy — chỉ giữ để tham khảo code training
+# Cell này KHÔNG được chạy — chỉ giữ để tham khảo code training
 # Nếu muốn train lại từ đầu, uncomment các dòng dưới:
 
 TRAIN_SCRIPT = """
@@ -300,8 +300,8 @@ model.train(
 )
 """
 print(TRAIN_SCRIPT)
-print("→ Training sẽ mất ~5h 30 phút.")
-print("→ Cách chạy nhanh: ./scripts/train.sh fresh (bash script tự chạy nền)")
+print(" Training sẽ mất ~5h 30 phút.")
+print(" Cách chạy nhanh: ./scripts/train.sh fresh (bash script tự chạy nền)")
 '''))
 
 # ============================================================
@@ -372,12 +372,12 @@ df_train['fitness'] = 0.1 * df_train['metrics/mAP50(B)'] + 0.9 * df_train['metri
 best_idx = df_train['fitness'].idxmax()
 best = df_train.iloc[best_idx]
 
-print(f"🏆 BEST epoch: {int(best['epoch'])}")
-print(f"   mAP@0.5      = {best['metrics/mAP50(B)']:.4f}")
-print(f"   mAP@0.5-0.95 = {best['metrics/mAP50-95(B)']:.4f}")
-print(f"   Precision    = {best['metrics/precision(B)']:.4f}")
-print(f"   Recall       = {best['metrics/recall(B)']:.4f}")
-print(f"   Fitness      = {best['fitness']:.4f}")
+print(f" BEST epoch: {int(best['epoch'])}")
+print(f" mAP@0.5 = {best['metrics/mAP50(B)']:.4f}")
+print(f" mAP@0.5-0.95 = {best['metrics/mAP50-95(B)']:.4f}")
+print(f" Precision = {best['metrics/precision(B)']:.4f}")
+print(f" Recall = {best['metrics/recall(B)']:.4f}")
+print(f" Fitness = {best['fitness']:.4f}")
 """))
 
 # ============================================================
@@ -413,7 +413,7 @@ CELLS.append(md("""
 
 | Class | mAP@0.5 | mAP@0.5-0.95 | Nhận xét |
 |---|---|---|---|
-| motorcycle | **0.871** ⭐ | 0.571 | Xuất sắc — nhờ data VN chất lượng cao |
+| motorcycle | **0.871** | 0.571 | Xuất sắc — nhờ data VN chất lượng cao |
 | car | 0.744 | 0.555 | Tốt — data car lớn (418k instances) |
 | bus | 0.781 | 0.578 | Tốt — bus dễ detect vì kích thước lớn |
 | truck | 0.524 | 0.407 | Yếu — vì trộn 'van' UA-DETRAC vào 'truck' gây confusion |
@@ -433,8 +433,8 @@ VIDEO_PATH = PROJECT_ROOT / "data/test_videos/raw/demo_traffic.mp4"
 
 model = YOLO(str(MODEL_PATH))
 print(f"Model: {MODEL_PATH.name}")
-print(f"  Params: {sum(p.numel() for p in model.model.parameters()):,}")
-print(f"  Classes: {model.names}")
+print(f" Params: {sum(p.numel() for p in model.model.parameters()):,}")
+print(f" Classes: {model.names}")
 """))
 CELLS.append(code("""
 # Detect frame đầu tiên
@@ -488,9 +488,9 @@ cap.release()
 
 print("Track IDs qua từng frame (10 frame đầu):")
 for f, ids in enumerate(track_history[:10]):
-    print(f"  Frame {f:2d}: {ids}")
+    print(f" Frame {f:2d}: {ids}")
 all_ids = set(i for ids in track_history for i in ids)
-print(f"\\nTổng {len(all_ids)} track_id unique trong 20 frame → mỗi track_id đại diện 1 chiếc xe.")
+print(f"\\nTổng {len(all_ids)} track_id unique trong 20 frame mỗi track_id đại diện 1 chiếc xe.")
 """))
 
 # ============================================================
@@ -503,13 +503,13 @@ CELLS.append(md("""
 **Ý tưởng cốt lõi**:
 1. Với mỗi frame, tính tâm bounding box: `(cx, cy) = ((x1+x2)/2, (y1+y2)/2)`
 2. Lưu tâm frame trước cho mỗi track_id
-3. Nếu segment `prev → curr` **cắt qua counting line** → xe đi qua line → tăng counter
+3. Nếu segment `prev curr` **cắt qua counting line** xe đi qua line tăng counter
 4. Đánh dấu `(line_name, track_id)` vào set để **không đếm trùng**
 
 **Xác định hướng** (ltr/rtl) bằng cross-product:
 - `line_vector = p2 - p1`, `movement = curr - prev`
 - `cross = line_vec.x × mov_vec.y - line_vec.y × mov_vec.x`
-- `cross > 0` → 'ltr' (theo chiều tay phải của line), `< 0` → 'rtl'
+- `cross > 0` 'ltr' (theo chiều tay phải của line), `< 0` 'rtl'
 """))
 CELLS.append(code("""
 def segments_cross(a1, a2, b1, b2):
@@ -521,7 +521,7 @@ def segments_cross(a1, a2, b1, b2):
 
 
 def crossing_direction(prev, curr, line_p1, line_p2):
-    '''Cross-product line_vec × movement_vec → dấu quyết định ltr/rtl.'''
+    '''Cross-product line_vec × movement_vec dấu quyết định ltr/rtl.'''
     vx = line_p2[0] - line_p1[0]
     vy = line_p2[1] - line_p1[1]
     mx = curr[0] - prev[0]
@@ -579,8 +579,8 @@ class Counter:
 # Unit test nhanh
 lines_test = [Line(name="test", p1=(0, 100), p2=(200, 100), count_direction="both")]
 c = Counter(lines=lines_test)
-c.update(0, [[95, 45, 105, 55]], [1], [0])   # id 1 ở trên
-ev = c.update(1, [[95, 145, 105, 155]], [1], [0])  # đi xuống → cắt line
+c.update(0, [[95, 45, 105, 55]], [1], [0]) # id 1 ở trên
+ev = c.update(1, [[95, 145, 105, 155]], [1], [0]) # đi xuống cắt line
 print(f"Test event: {ev}")
 print(f"Test counts: {dict(c.counts['test'])}")
 """))
@@ -651,9 +651,9 @@ for frame_idx, res in enumerate(model_run.track(
     writer.write(frame_out)
 writer.release()
 dt = time.time() - t0
-print(f"[✓] Pipeline chạy {dt:.1f}s ({N_FRAMES/dt:.1f} FPS)")
-print(f"[✓] Video: {OUT_VIDEO}")
-print(f"[✓] Tổng events: {len(all_events)}")
+print(f"[] Pipeline chạy {dt:.1f}s ({N_FRAMES/dt:.1f} FPS)")
+print(f"[] Video: {OUT_VIDEO}")
+print(f"[] Tổng events: {len(all_events)}")
 """))
 CELLS.append(code("""
 # Xem video output (chỉ hoạt động trong Jupyter local)
@@ -759,11 +759,11 @@ CELLS.append(code("""
 duration = df["time_sec"].max() - df["time_sec"].min()
 if duration > 0:
     xe_per_hour = len(df) * 3600 / duration
-    print(f"⏱  Video dài: {duration:.1f} giây")
-    print(f"📊 Flow rate: {xe_per_hour:.0f} xe/giờ (extrapolate từ video ngắn)")
-    print(f"\\n📈 Per class (xe/giờ):")
+    print(f"⏱ Video dài: {duration:.1f} giây")
+    print(f" Flow rate: {xe_per_hour:.0f} xe/giờ (extrapolate từ video ngắn)")
+    print(f"\\n Per class (xe/giờ):")
     for cls, cnt in per_class.items():
-        print(f"   {cls:10s}: {cnt * 3600 / duration:.0f}")
+        print(f" {cls:10s}: {cnt * 3600 / duration:.0f}")
 """))
 
 # ============================================================
@@ -821,9 +821,9 @@ for frame_idx, res in enumerate(model_baseline.track(
 pred_baseline = pd.DataFrame(events_baseline)["class_name"].value_counts().to_dict() if events_baseline else {}
 pred_new = df["class_name"].value_counts().to_dict()
 
-print(f"Baseline pred:  {pred_baseline}")
+print(f"Baseline pred: {pred_baseline}")
 print(f"Model mới pred: {pred_new}")
-print(f"GT:             {gt_counts}")
+print(f"GT: {gt_counts}")
 """))
 CELLS.append(code("""
 # Compute metrics cho cả 2 model
@@ -897,9 +897,9 @@ streamlit run ui/streamlit_app.py
 ```
 
 **3 tab chính**:
-- **Tab 1 (Run)**: upload video → chỉnh model/line/threshold/FP16 → chạy pipeline → xem video output
+- **Tab 1 (Run)**: upload video chỉnh model/line/threshold/FP16 chạy pipeline xem video output
 - **Tab 2 (Stats)**: bucket thời gian, 5 loại chart, flow rate, peak period
-- **Tab 3 (Eval)**: upload GT JSON hoặc điền tay → tính accuracy/MAE/MAPE per-class
+- **Tab 3 (Eval)**: upload GT JSON hoặc điền tay tính accuracy/MAE/MAPE per-class
 
 Web UI dùng chính các module trong `src/` — không viết lại pipeline. Cùng model, cùng logic.
 """))
@@ -911,26 +911,26 @@ CELLS.append(md("""
 ---
 ## 13. Kết luận + hướng phát triển
 
-### ✅ Đã hoàn thành
+### Đã hoàn thành
 
 Đầy đủ 6 yêu cầu topic 10:
-1. ✅ Detection: YOLOv8s fine-tune trên 68k ảnh, mAP@0.5 = 0.843
-2. ✅ Tracking: ByteTrack (built-in Ultralytics), track_id ổn định
-3. ✅ Counting với multi-line và direction (ltr/rtl)
-4. ✅ Thống kê theo class + thời gian (bucket 30s → 1h) + flow rate + peak period
-5. ✅ 5 loại biểu đồ: bar, cumulative, stacked, direction, heatmap
-6. ✅ Evaluation 2 tầng: mAP + counting accuracy vs baseline
+1. Detection: YOLOv8s fine-tune trên 68k ảnh, mAP@0.5 = 0.843
+2. Tracking: ByteTrack (built-in Ultralytics), track_id ổn định
+3. Counting với multi-line và direction (ltr/rtl)
+4. Thống kê theo class + thời gian (bucket 30s 1h) + flow rate + peak period
+5. 5 loại biểu đồ: bar, cumulative, stacked, direction, heatmap
+6. Evaluation 2 tầng: mAP + counting accuracy vs baseline
 
-### 🎯 Phần mở rộng
+### Phần mở rộng
 
-- ✅ Merge 2 dataset (UA-DETRAC + VN Cần Thơ) → thêm motorcycle cho topic VN
-- ✅ Direction-aware counting bằng cross-product
-- ✅ FP16 inference (tăng tốc 1.5-2×)
-- ✅ Streamlit web UI cho non-developer
-- ✅ Auto-resume training (dừng bất kỳ lúc nào và tiếp tục)
-- ✅ Eval 2 tầng chuẩn ML + task-level
+- Merge 2 dataset (UA-DETRAC + VN Cần Thơ) thêm motorcycle cho topic VN
+- Direction-aware counting bằng cross-product
+- FP16 inference (tăng tốc 1.5-2×)
+- Streamlit web UI cho non-developer
+- Auto-resume training (dừng bất kỳ lúc nào và tiếp tục)
+- Eval 2 tầng chuẩn ML + task-level
 
-### ⚠️ Hạn chế + hướng cải thiện
+### Hạn chế + hướng cải thiện
 
 | Hạn chế | Giải pháp |
 |---|---|
@@ -939,7 +939,7 @@ CELLS.append(md("""
 | GT counting chỉ có 1 video 5.9s | Đếm tay thêm video dài |
 | Chưa xử lý tình huống mưa/đêm/camera rung | Data augmentation + domain adaptation |
 
-### 🚀 Hướng phát triển tiếp
+### Hướng phát triển tiếp
 
 - Thử YOLO11, YOLOv10, RT-DETR để so mAP + speed
 - Deploy ONNX/TensorRT cho edge device (Jetson Nano, Raspberry Pi)
@@ -983,9 +983,9 @@ def main():
     nbformat.validator.normalize(nb2)
     nbformat.write(nb2, str(OUT))
 
-    print(f"[✓] Đã sinh: {OUT}")
-    print(f"    Số cell: {len(CELLS)}")
-    print(f"    Kích thước: {OUT.stat().st_size / 1024:.1f} KB")
+    print(f"[] Đã sinh: {OUT}")
+    print(f" Số cell: {len(CELLS)}")
+    print(f" Kích thước: {OUT.stat().st_size / 1024:.1f} KB")
 
 
 if __name__ == "__main__":

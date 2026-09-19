@@ -2,8 +2,8 @@
 # Chờ training PID xong rồi tự động chạy eval so sánh models.
 #
 # Chạy:
-#     ./scripts/eval_after_training.sh <TRAINING_PID>
-#     ./scripts/eval_after_training.sh 51013
+# ./scripts/eval_after_training.sh <TRAINING_PID>
+# ./scripts/eval_after_training.sh 51013
 #
 # Log ra: logs/eval_after_training.log
 

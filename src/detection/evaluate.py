@@ -14,10 +14,10 @@ def main():
     model = YOLO(args.weights)
     metrics = model.val(data=args.data, imgsz=args.imgsz, split=args.split,
                         save_json=True)
-    print(f"mAP@0.5      = {metrics.box.map50:.4f}")
+    print(f"mAP@0.5 = {metrics.box.map50:.4f}")
     print(f"mAP@0.5:0.95 = {metrics.box.map:.4f}")
     for i, name in metrics.names.items():
-        print(f"  {name:12s}  AP@0.5:0.95 = {metrics.box.maps[i]:.4f}")
+        print(f" {name:12s} AP@0.5:0.95 = {metrics.box.maps[i]:.4f}")
 
 
 if __name__ == "__main__":

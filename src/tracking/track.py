@@ -15,9 +15,9 @@ def track_stream(weights: str, source: str,
 
     result.boxes có các thuộc tính:
       - xyxy: (N, 4) — box toạ độ pixel
-      - conf: (N,)   — confidence
-      - cls:  (N,)   — class id
-      - id:   (N,)   — tracking id (có thể None với box vừa xuất hiện)
+      - conf: (N,) — confidence
+      - cls: (N,) — class id
+      - id: (N,) — tracking id (có thể None với box vừa xuất hiện)
 
     half=True bật FP16 inference (~1.3-1.5× nhanh hơn trên GPU Ada/Ampere).
     """
@@ -45,4 +45,4 @@ if __name__ == "__main__":
         if res.boxes.id is None:
             continue
         n = len(res.boxes)
-        print(f"frame {i:5d}  n_track = {n}  ids = {res.boxes.id.tolist()[:5]}...")
+        print(f"frame {i:5d} n_track = {n} ids = {res.boxes.id.tolist()[:5]}...")

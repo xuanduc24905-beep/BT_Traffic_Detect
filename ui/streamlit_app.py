@@ -25,10 +25,10 @@ from src.stats.aggregator import (
 from src.evaluation.metrics import report as eval_report
 
 
-st.set_page_config(page_title="VN Traffic AI", page_icon="🚦", layout="wide")
+st.set_page_config(page_title="VN Traffic AI", page_icon="", layout="wide")
 
 # ---------- Sidebar ----------
-st.sidebar.title("⚙️ Cấu hình")
+st.sidebar.title(" Cấu hình")
 
 WEIGHTS_DIR = ROOT / "weights"
 available_weights = sorted([str(p.relative_to(ROOT)) for p in WEIGHTS_DIR.glob("*.pt")])
@@ -58,14 +58,14 @@ line_y_pct = st.sidebar.slider("Vị trí line (% chiều cao)", 10, 90, 50, 5)
 line_direction = st.sidebar.radio("Hướng line", ["horizontal", "vertical"])
 count_direction = st.sidebar.radio(
     "Chiều đếm", ["both", "ltr", "rtl"],
-    help="ltr = trái→phải theo chiều vector line (p1→p2); rtl = ngược lại. "
+    help="ltr = tráiphải theo chiều vector line (p1p2); rtl = ngược lại. "
          "'both' đếm cả hai chiều nhưng vẫn phân biệt trong output.")
 
 # ---------- Main ----------
-st.title("🚦 VN Traffic AI — Đếm và phân loại phương tiện")
+st.title(" VN Traffic AI — Đếm và phân loại phương tiện")
 st.caption("Detection + Tracking (ByteTrack/BoT-SORT) + Counting theo line")
 
-tab_run, tab_stats, tab_eval = st.tabs(["▶️ Chạy pipeline", "📊 Thống kê", "📐 Đánh giá"])
+tab_run, tab_stats, tab_eval = st.tabs(["▶ Chạy pipeline", " Thống kê", " Đánh giá"])
 
 # ---------- Tab 1: Run ----------
 with tab_run:
@@ -101,7 +101,7 @@ with tab_run:
         )
         st.session_state["video_meta"] = dict(w=w, h=h, fps=fps, n_frames=n_frames)
 
-    if st.button("🚀 Chạy pipeline", type="primary", disabled="tmp_video" not in st.session_state):
+    if st.button(" Chạy pipeline", type="primary", disabled="tmp_video" not in st.session_state):
         meta = st.session_state["video_meta"]
         w, h = meta["w"], meta["h"]
 
@@ -146,7 +146,7 @@ with tab_run:
         st.session_state["class_names"] = class_names
 
     if "out_video" in st.session_state:
-        st.markdown("### 🎬 Video output")
+        st.markdown("### Video output")
         st.video(st.session_state["out_video"])
         with open(st.session_state["out_video"], "rb") as f:
             st.download_button("Download video", f, file_name=Path(st.session_state["out_video"]).name)
@@ -181,7 +181,7 @@ with tab_stats:
             c4.metric("Thời lượng (s)", f"{summ['duration_sec']:.1f}")
 
             # --- Flow rate ---
-            st.markdown("#### 🚗 Tốc độ lưu lượng")
+            st.markdown("#### Tốc độ lưu lượng")
             fr_min = flow_rate(df_enriched, unit="minute")
             fr_hour = flow_rate(df_enriched, unit="hour")
             fc1, fc2 = st.columns(2)
@@ -199,7 +199,7 @@ with tab_stats:
             # --- Peak period ---
             peak = peak_period(df_enriched, bucket_sec)
             if peak:
-                st.markdown("#### 📈 Khung giờ cao điểm")
+                st.markdown("#### Khung giờ cao điểm")
                 pc1, pc2, pc3 = st.columns(3)
                 pc1.metric(f"Bucket cao điểm ({bucket_choice})",
                            f"#{peak['peak_bucket']}")
@@ -208,7 +208,7 @@ with tab_stats:
                 pc3.metric("Số lượt trong bucket", peak["peak_total"])
 
             # --- Chart theo bucket ---
-            st.markdown(f"#### 📊 Lưu lượng theo {bucket_choice}")
+            st.markdown(f"#### Lưu lượng theo {bucket_choice}")
             if pivot.empty:
                 st.caption(f"Video quá ngắn để chia theo {bucket_choice}.")
             else:
@@ -220,7 +220,7 @@ with tab_stats:
                     st.bar_chart(pivot)
 
             # --- Heatmap ---
-            st.markdown("#### 🔥 Heatmap thời gian × loại xe")
+            st.markdown("#### Heatmap thời gian × loại xe")
             if not pivot.empty:
                 # Streamlit dùng dataframe styling để hiển thị màu
                 st.dataframe(
@@ -229,13 +229,13 @@ with tab_stats:
                 )
 
             # --- Cumulative ---
-            st.markdown("#### 📈 Đếm tích luỹ theo thời gian")
+            st.markdown("#### Đếm tích luỹ theo thời gian")
             cum = cumulative_counts(df_enriched)
             if not cum.empty:
                 st.line_chart(cum)
 
             # --- Per class ---
-            st.markdown("#### 🚦 Số lượng theo loại xe (tổng)")
+            st.markdown("#### Số lượng theo loại xe (tổng)")
             counts_df = pd.DataFrame(
                 {"class_name": list(summ["per_class"].keys()),
                  "count": list(summ["per_class"].values())}
@@ -245,13 +245,13 @@ with tab_stats:
             # --- Per direction ---
             dir_df = counts_by_direction(df_enriched)
             if not dir_df.empty:
-                st.markdown("#### ↔ Lưu lượng theo chiều đi (line × direction)")
+                st.markdown("#### Lưu lượng theo chiều đi (line × direction)")
                 st.dataframe(dir_df, use_container_width=True)
                 st.bar_chart(dir_df)
 
             # --- Per line ---
             if len(summ["per_line"]) > 1:
-                st.markdown("#### 🛣 So sánh lưu lượng giữa các line")
+                st.markdown("#### So sánh lưu lượng giữa các line")
                 line_df = pd.DataFrame(
                     {"line": list(summ["per_line"].keys()),
                      "count": list(summ["per_line"].values())}
@@ -259,7 +259,7 @@ with tab_stats:
                 st.bar_chart(line_df.set_index("line"))
 
             # --- Event log ---
-            st.markdown("#### 📋 Event log")
+            st.markdown("#### Event log")
             st.dataframe(df_enriched, use_container_width=True, height=250)
 
             # --- Downloads ---

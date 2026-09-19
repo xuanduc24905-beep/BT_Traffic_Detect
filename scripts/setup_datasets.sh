@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # One-shot setup dataset cho VN Traffic AI.
-#   - Import UA-DETRAC từ project cũ (symlink JPG + remap label).
-#   - Import Roboflow VN nếu đã có ở data/raw/roboflow_vn/.
-#   - Import VisDrone nếu đã có ở data/raw/visdrone/.
-#   - In stats cuối.
+# - Import UA-DETRAC từ project cũ (symlink JPG + remap label).
+# - Import Roboflow VN nếu đã có ở data/raw/roboflow_vn/.
+# - Import VisDrone nếu đã có ở data/raw/visdrone/.
+# - In stats cuối.
 #
 # Chạy: bash scripts/setup_datasets.sh
 set -euo pipefail
@@ -12,14 +12,14 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 echo "======================================================"
-echo "  VN Traffic AI — Dataset Setup"
+echo " VN Traffic AI — Dataset Setup"
 echo "======================================================"
 echo ""
 
 # ---------- 1. UA-DETRAC ----------
 echo "[1/3] Import UA-DETRAC từ /home/xuand/yolov8_finetune ..."
 if [[ ! -d /home/xuand/yolov8_finetune/data/detrac/labels ]]; then
-    echo "  [!] Không tìm thấy project cũ. Bỏ qua UA-DETRAC."
+    echo " [!] Không tìm thấy project cũ. Bỏ qua UA-DETRAC."
 else
     python scripts/import_ua_detrac.py --out data/merged
 fi
@@ -64,12 +64,12 @@ echo ""
 
 # ---------- Stats cuối ----------
 echo "======================================================"
-echo "  DATASET STATS"
+echo " DATASET STATS"
 echo "======================================================"
 for split in train val test; do
     n_img=$(find data/merged/images/$split -type l -o -type f 2>/dev/null | wc -l || echo 0)
     n_lbl=$(find data/merged/labels/$split -type f 2>/dev/null | wc -l || echo 0)
-    printf "  %-6s  images=%7d   labels=%7d\n" "$split" "$n_img" "$n_lbl"
+    printf " %-6s images=%7d labels=%7d\n" "$split" "$n_img" "$n_lbl"
 done
 echo ""
 
@@ -79,9 +79,9 @@ if [[ "$n_total" -eq 0 ]]; then
     exit 1
 fi
 
-echo "[✓] Dataset đã sẵn ở data/merged/"
-echo "[✓] File config: data/data.yaml"
+echo "[] Dataset đã sẵn ở data/merged/"
+echo "[] File config: data/data.yaml"
 echo ""
 echo "Bước tiếp theo:"
-echo "  conda activate yolov8_ft"
-echo "  python -m src.detection.train --data data/data.yaml --epochs 50 --batch 16"
+echo " conda activate yolov8_ft"
+echo " python -m src.detection.train --data data/data.yaml --epochs 50 --batch 16"

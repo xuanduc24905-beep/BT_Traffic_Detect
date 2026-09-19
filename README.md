@@ -1,6 +1,6 @@
 # VN Traffic AI — Phát hiện, theo vết và đếm phương tiện giao thông Việt Nam
 
-Hệ thống end-to-end: **video giao thông VN → detection → tracking → counting →
+Hệ thống end-to-end: **video giao thông VN detection tracking counting
 thống kê + đánh giá**. Đề tài nhóm 4 người, dùng chung 1 conda env `yolov8_ft`.
 
 ## Tech stack
@@ -16,37 +16,37 @@ thống kê + đánh giá**. Đề tài nhóm 4 người, dùng chung 1 conda en
 ```
 vn_traffic_ai/
 ├── data/
-│   ├── raw/                        # dataset gốc (gitignored)
-│   │   ├── ua_detrac/
-│   │   ├── roboflow_vn/
-│   │   └── visdrone_vid/
-│   ├── merged/                     # sau merge_datasets.py (gitignored)
-│   │   ├── images/{train,val,test}/
-│   │   └── labels/{train,val,test}/
-│   ├── test_videos/                # video VN tự quay cho eval (gitignored)
-│   │   ├── raw/
-│   │   └── ground_truth/           # JSON đếm thủ công
-│   └── data.yaml                   # config 5 class Ultralytics
+│ ├── raw/ # dataset gốc (gitignored)
+│ │ ├── ua_detrac/
+│ │ ├── roboflow_vn/
+│ │ └── visdrone_vid/
+│ ├── merged/ # sau merge_datasets.py (gitignored)
+│ │ ├── images/{train,val,test}/
+│ │ └── labels/{train,val,test}/
+│ ├── test_videos/ # video VN tự quay cho eval (gitignored)
+│ │ ├── raw/
+│ │ └── ground_truth/ # JSON đếm thủ công
+│ └── data.yaml # config 5 class Ultralytics
 ├── configs/
-│   ├── class_mapping.json          # remap từng dataset về 5 class chung
-│   └── counting_zones.json         # định nghĩa line/zone đếm cho video test
+│ ├── class_mapping.json # remap từng dataset về 5 class chung
+│ └── counting_zones.json # định nghĩa line/zone đếm cho video test
 ├── weights/
-│   └── yolov8n.pt                  # pretrained COCO
+│ └── yolov8n.pt # pretrained COCO
 ├── src/
-│   ├── detection/                  # Người 1
-│   ├── tracking/                   # Người 2
-│   ├── stats/                      # Người 3
-│   ├── evaluation/                 # Người 4
-│   └── pipeline/                   # tích hợp end-to-end
+│ ├── detection/ # Người 1
+│ ├── tracking/ # Người 2
+│ ├── stats/ # Người 3
+│ ├── evaluation/ # Người 4
+│ └── pipeline/ # tích hợp end-to-end
 ├── scripts/
-│   ├── merge_datasets.py           # gộp UA-DETRAC + Roboflow VN + VisDrone
-│   ├── prepare_test_video.py       # cắt frame + template ground truth
-│   └── download_datasets.sh
+│ ├── merge_datasets.py # gộp UA-DETRAC + Roboflow VN + VisDrone
+│ ├── prepare_test_video.py # cắt frame + template ground truth
+│ └── download_datasets.sh
 ├── notebooks/
 ├── tests/
 ├── docs/
-│   ├── TEAM_ASSIGNMENT.md          # phân công chi tiết + timeline
-│   └── DATA_GUIDE.md               # hướng dẫn download data
+│ ├── TEAM_ASSIGNMENT.md # phân công chi tiết + timeline
+│ └── DATA_GUIDE.md # hướng dẫn download data
 ├── results/{figures,tables,videos}/
 └── logs/
 ```
@@ -87,7 +87,7 @@ Xem [docs/DATA_GUIDE.md](docs/DATA_GUIDE.md) để download.
 |---|---|---|
 | 1 | `src/detection/` | Train YOLOv8 trên merged data, xuất `best.pt`, đánh giá mAP |
 | 2 | `src/tracking/` | Wrapper ByteTrack/BoT-SORT + line/zone counter chống đếm trùng |
-| 3 | `src/stats/` | Aggregate output tracking → CSV + biểu đồ theo class × thời gian |
+| 3 | `src/stats/` | Aggregate output tracking CSV + biểu đồ theo class × thời gian |
 | 4 | `src/evaluation/` | Ground truth thủ công + tính Accuracy/MAE/MAPE + tích hợp toàn hệ thống |
 
 Chi tiết: [docs/TEAM_ASSIGNMENT.md](docs/TEAM_ASSIGNMENT.md).
