@@ -446,21 +446,7 @@ Chỉ hoạt động sau khi chạy pipeline ở Tab 1.
 - 3 metric: Overall Accuracy, MAE, MAPE (%)
 - Nút tải JSON eval report
 
----
 
-### Workflow ví dụ (demo giáo viên)
-
-1. Chọn `Improved (nhóm)` trong Pipeline (sidebar)
-2. Chọn weights `runs/.../train_v8s_ft_vnv3/weights/best.pt`
-3. Giữ mặc định: `conf=0.3, iou=0.5, imgsz=640, FP16 on`
-4. Chỉnh line: `Vị trí=50%, Hướng=horizontal, Chiều đếm=both`
-5. Tab 1 → upload `demo_traffic.mp4` → chọn `⚖ So sánh 2 pipeline`
-6. Side A giữ `yolov8s.pt`, Side B giữ `best.pt` fine-tune → bấm chạy
-7. Xem bảng so sánh + bar chart per-class ở cuối tab
-8. Chuyển Tab 2 → xem flow rate, peak hour (thử đổi "Chia thời gian" giữa 1 phút và 5 phút)
-9. Chuyển Tab 3 → điền GT (từ video đếm tay) → xem MAE/MAPE
-
----
 
 ## File deliverable chính
 
