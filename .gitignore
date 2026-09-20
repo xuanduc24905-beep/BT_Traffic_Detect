@@ -11,6 +11,8 @@ data/*.zip
 weights/*.pt
 weights/*.onnx
 !weights/.gitkeep
+!weights/best.pt
+!weights/yolov8s.pt
 # Ultralytics tự download về pwd
 /yolo*.pt
 /yolo*.onnx

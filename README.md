@@ -332,24 +332,133 @@ Insight: 2 pipeline có stability tương đương nhưng bị lỗi ở **khía
 
 ---
 
-## Streamlit dashboard
+## Streamlit dashboard — Hướng dẫn chi tiết
+
+### Khởi chạy
 
 ```bash
+cd /home/xuand/vn_traffic_ai      # hoặc path tới repo của bạn
+conda activate yolov8_ft          # nếu dùng conda
 streamlit run ui/streamlit_app.py
 ```
 
-**Tab 1 — Chạy pipeline:**
-- Upload video → chọn weights → chỉnh conf/iou/imgsz/line → chạy.
-- Video output **preview inline** (auto transcode H.264 bằng ffmpeg).
+Mặc định mở tại `http://localhost:8501`. Nếu port bị chiếm, thêm `--server.port 8502`.
 
-**Tab 1 — Compare mode:**
-- Chọn `⚖ So sánh 2 pipeline` → chọn 2 weights (Baseline + Improved) → chạy 1 phát ra 2 output cạnh nhau.
-- Bảng metrics: tổng đếm, runtime, FPS, chênh lệch.
-- Bar chart per-class + info box tự sinh đọc kết quả.
+> **Yêu cầu tiên quyết:**
+> 1. Đã cài `requirements.txt` (đặc biệt `streamlit`, `ultralytics`, `opencv-python`, `pandas`).
+> 2. Đã cài `ffmpeg` trong PATH (để transcode H.264 preview video inline browser). Nếu thiếu, video vẫn tải về được nhưng preview trong app có thể lỗi.
+> 3. Có ít nhất 1 file `.pt` trong `weights/` hoặc `runs/detect/*/weights/best.pt`. Nếu không có, app sẽ báo lỗi và dừng.
 
-**Tab 2 — Thống kê:** biểu đồ per class, per time bucket, cumulative, flow rate.
+### Sidebar — Bảng cấu hình chung (áp dụng cho mọi tab)
 
-**Tab 3 — Đánh giá:** upload GT JSON → tính accuracy/MAE/MAPE per class.
+| Nút / Nhóm | Ý nghĩa | Khi nào chỉnh |
+|---|---|---|
+| **Pipeline** (radio) | Chọn logic pipeline: `Improved (nhóm)` hoặc `Baseline (giáo viên)`. **Chỉ dùng cho chế độ chạy 1 pipeline.** Ở chế độ so sánh, mỗi bên chọn riêng. | Muốn demo pipeline nào |
+| **Model weights** (dropdown) | Chọn file `.pt` — quét cả `weights/` và `runs/detect/*/weights/best.pt`. Mặc định ưu tiên `weights/baseline_detrac4.pt` (model tốt nhất, acc 97.7% trên demo). | Đổi giữa COCO pretrained (`yolov8s.pt`) và fine-tune (`best.pt`) |
+| **Tracker** (radio) | `bytetrack.yaml` hoặc `botsort.yaml`. **Chỉ dùng cho Improved pipeline** (Baseline luôn dùng ByteTrack mặc định của Ultralytics). | ByteTrack nhanh; BoT-SORT chính xác hơn ở cảnh nhiều xe che nhau |
+| **Confidence threshold** (0.1–0.9, mặc định 0.3) | Ngưỡng tin cậy — box có `conf < threshold` sẽ bị lọc. Cao → ít false positive nhưng dễ miss. Thấp → bắt nhiều nhưng có thể có box rác. | Nếu miss xe máy → giảm còn 0.2. Nếu có box rác → tăng lên 0.4 |
+| **IoU threshold (NMS)** (0.1–0.9, mặc định 0.5) | Ngưỡng IoU cho Non-Maximum Suppression — 2 box có IoU vượt ngưỡng thì loại box confidence thấp hơn. | Cảnh xe sát nhau → tăng lên 0.6-0.7 (giữ nhiều box). Ngược lại giảm |
+| **Image size** (dropdown 320/416/512/640/768, mặc định 640) | Resize ảnh input trước khi đưa vào YOLO. Nhỏ → nhanh nhưng miss xe nhỏ. | Video 1080p có xe nhỏ → 640/768. Test nhanh → 416 |
+| **FP16 inference** (checkbox, mặc định bật) | Bật inference dùng half-precision (nhanh 1.3-1.5× trên GPU Ada/Ampere/Turing). | Tắt nếu chạy CPU hoặc GPU cũ (GTX 10xx trở về trước) |
+| **Vị trí line (%)** (slider 10–90, mặc định 50) | Vị trí counting line theo % chiều cao (nếu horizontal) hoặc chiều rộng (nếu vertical). | Đặt ngang giữa video (50%) hoặc điều chỉnh theo góc quay |
+| **Hướng line** (radio) | `horizontal` (kẻ ngang) hoặc `vertical` (kẻ dọc). | Video quay từ trên xuống → horizontal. Camera bên đường → vertical |
+| **Chiều đếm** (radio) | `both` (đếm cả 2 chiều, phân biệt trong output) / `ltr` (chỉ đếm khi cross-product > 0) / `rtl` (< 0). | Ngã tư chỉ muốn đếm 1 chiều → `ltr` hoặc `rtl` |
+
+---
+
+### Tab 1: `▶ Chạy pipeline`
+
+**Bước 1 — Upload video:** kéo thả file `.mp4/.avi/.mov` vào ô upload. App hiển thị preview và thông tin `WxH @ FPS · N frames · duration`.
+
+**Bước 2 — Chọn chế độ:**
+
+#### Chế độ A: `▶ Chạy 1 pipeline` (mặc định)
+Dùng cấu hình sidebar → bấm nút `Chạy pipeline`. Có thanh progress theo frame.
+
+Output hiển thị:
+- Video annotated (đã transcode H.264, play inline được)
+- 2 nút tải: video mp4v gốc và video H.264
+- Data tự động chuyển sang **Tab Thống kê** và **Tab Đánh giá**
+
+#### Chế độ B: `⚖ So sánh 2 pipeline (Baseline vs Improved)`
+
+App hiện 2 cột **Side A** và **Side B**, mỗi bên có:
+- **Pipeline** — chọn giữa Baseline (1 line, không direction) và Improved (multi-line + direction + log event)
+- **Weights** — chọn file `.pt` riêng
+
+**Mặc định thông minh**: Side A gợi ý `yolov8s.pt` (COCO gốc), Side B gợi ý `best.pt` fine-tune (tìm `ft_vnv3` trước, không có thì `4cls`).
+
+Bấm `⚖ Chạy so sánh 2 pipeline` → app chạy tuần tự 2 side, mỗi bên có progress bar riêng.
+
+Kết quả side-by-side:
+- 2 video output cạnh nhau
+- Bảng đếm per-class từng side + metric: Tổng đếm / Runtime / FPS
+- Bảng so sánh chỉ số chính (Tổng đếm, Runtime, FPS) + chênh lệch + speedup
+- Bar chart per-class dạng grouped bar (2 màu Baseline vs Improved)
+- Info box tự đọc kết quả bằng chữ
+
+Tab Thống kê và Tab Đánh giá sẽ có thêm radio **"Xem thống kê của pipeline nào?"** để chọn nguồn dữ liệu.
+
+---
+
+### Tab 2: `Thống kê`
+
+Chỉ hoạt động sau khi chạy pipeline ở Tab 1.
+
+**Nút chọn nguồn (chỉ có trong compare mode):** radio `Improved (fine-tune)` / `Baseline (COCO)` — quyết định thống kê nào đang xem.
+
+**Chia thời gian theo (dropdown):** `30 giây / 1 phút / 5 phút / 15 phút / 30 phút / 1 giờ` — quyết định bucket cho chart theo thời gian và peak period.
+
+**Các mục hiển thị:**
+
+| Mục | Nội dung |
+|---|---|
+| Metrics tổng | Tổng lượt, số loại xe, loại nhiều nhất, thời lượng video |
+| Tốc độ lưu lượng | `Tổng xe/phút` và `Tổng xe/giờ` + bảng chi tiết per class |
+| Khung giờ cao điểm | Bucket đông nhất + số lượt trong bucket đó (thay đổi theo lựa chọn "Chia thời gian") |
+| Biểu đồ theo bucket | Line chart hoặc Bar chart chồng (toggle radio) |
+| Heatmap | Bảng có gradient màu, hàng = bucket, cột = class |
+| Đếm tích luỹ | Line chart tăng dần theo thời gian |
+| Số lượng theo loại xe | Bar chart tổng |
+| Lưu lượng theo chiều đi | Bảng + bar chart `line × direction` (chỉ Improved) |
+| So sánh giữa các line | Chỉ hiển thị nếu có ≥2 line |
+| Event log | Bảng chi tiết mọi lượt đếm |
+| Nút tải xuống | Events CSV, Summary CSV, Bucket CSV |
+
+---
+
+### Tab 3: `Đánh giá`
+
+Đo độ chính xác của counting so với ground truth (đếm tay).
+
+**Bước 1 — Nhập GT bằng 1 trong 2 cách:**
+
+- **Cách A: Upload JSON.** File có cấu trúc:
+  ```json
+  { "counts_by_class": { "motorcycle": 45, "car": 30, "bus": 3, "truck": 2 } }
+  ```
+- **Cách B: Điền tay.** Các ô `number_input` cho từng class (motorcycle, car, bus, truck, van, others, bicycle). Có hiển thị số model dự đoán bên cạnh để dễ so sánh.
+
+> ⚠️ **Lưu ý:** phải nhập số xe **thật** bạn đếm được từ video, không phải copy số model dự đoán. Để mặc định 0 sẽ không đánh giá đúng.
+
+**Bước 2 — Xem kết quả (tự động khi có GT):**
+- Bảng per-class: `Pred / GT / |Err| / Accuracy`
+- 3 metric: Overall Accuracy, MAE, MAPE (%)
+- Nút tải JSON eval report
+
+---
+
+### Workflow ví dụ (demo giáo viên)
+
+1. Chọn `Improved (nhóm)` trong Pipeline (sidebar)
+2. Chọn weights `runs/.../train_v8s_ft_vnv3/weights/best.pt`
+3. Giữ mặc định: `conf=0.3, iou=0.5, imgsz=640, FP16 on`
+4. Chỉnh line: `Vị trí=50%, Hướng=horizontal, Chiều đếm=both`
+5. Tab 1 → upload `demo_traffic.mp4` → chọn `⚖ So sánh 2 pipeline`
+6. Side A giữ `yolov8s.pt`, Side B giữ `best.pt` fine-tune → bấm chạy
+7. Xem bảng so sánh + bar chart per-class ở cuối tab
+8. Chuyển Tab 2 → xem flow rate, peak hour (thử đổi "Chia thời gian" giữa 1 phút và 5 phút)
+9. Chuyển Tab 3 → điền GT (từ video đếm tay) → xem MAE/MAPE
 
 ---
 
