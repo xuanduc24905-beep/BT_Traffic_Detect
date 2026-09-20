@@ -87,18 +87,146 @@ vn_traffic_ai/
 
 ---
 
-## Setup
+## Cài đặt
 
+### Yêu cầu hệ thống
+- **OS:** Ubuntu 20.04+, Windows 10/11 (WSL2), hoặc macOS 12+
+- **Python:** 3.10 hoặc 3.11 (khuyến nghị dùng conda)
+- **GPU:** NVIDIA GPU với ≥6 GB VRAM (CUDA 11.8+). CPU cũng chạy được nhưng chậm ~30×.
+- **Disk:** ~5 GB cho code + weights + dataset nhỏ (chưa tính raw data 137k ảnh)
+
+### Bước 1 — Clone repo
 ```bash
+git clone https://github.com/xuanduc24905-beep/BT_Traffic_Detect.git
+cd BT_Traffic_Detect
+```
+
+### Bước 2 — Tạo môi trường Python
+```bash
+# Cách A: dùng conda (khuyến nghị)
+conda create -n yolov8_ft python=3.11 -y
 conda activate yolov8_ft
+
+# Cách B: dùng venv
+python -m venv .venv
+source .venv/bin/activate      # Linux/Mac
+# .venv\Scripts\activate       # Windows
+```
+
+### Bước 3 — Cài dependencies
+```bash
 pip install -r requirements.txt
 
-# Kiểm tra CUDA
-python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
-
-# Cài ffmpeg cho Streamlit H.264 preview (nếu chưa có)
-sudo apt install ffmpeg   # Ubuntu/WSL
+# ffmpeg (bắt buộc cho Streamlit preview video H.264 inline)
+sudo apt install ffmpeg -y                     # Ubuntu/WSL/Debian
+# brew install ffmpeg                          # macOS
+# choco install ffmpeg                         # Windows (dùng Chocolatey)
 ```
+
+### Bước 4 — Kiểm tra CUDA (nếu có GPU)
+```bash
+python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}, GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"CPU only\"}')"
+```
+
+Kết quả mong đợi: `CUDA: True, GPU: NVIDIA RTX ...`
+
+### Bước 5 — Tải trọng số fine-tune (nếu chưa có)
+
+Repo **không commit weights** (dung lượng lớn). Tải riêng:
+- **Baseline `yolov8s.pt`** — Ultralytics tự tải khi chạy lần đầu.
+- **Improved `best.pt`** — download từ [Google Drive / release page] hoặc train lại theo hướng dẫn ở mục "Quy trình training" bên dưới.
+
+Đặt vào:
+```
+weights/yolov8s.pt                                           ← Baseline
+runs/detect/runs/detect/train_v8s_ft_vnv3/weights/best.pt    ← Improved
+```
+
+---
+
+## Chạy nhanh (Quick Start)
+
+### Cách 1 — Streamlit dashboard (khuyến nghị cho demo)
+
+```bash
+streamlit run ui/streamlit_app.py
+```
+
+Mở browser: **http://localhost:8501**
+
+Thao tác trong UI:
+1. Chọn **Pipeline** ở sidebar (Improved hoặc Baseline).
+2. Chọn **Model weights**.
+3. Upload video .mp4/.avi/.mov.
+4. Chỉnh conf/iou/imgsz + vị trí line đếm.
+5. Nhấn **Chạy pipeline** → xem video output + bảng thống kê inline.
+
+Chế độ **⚖ So sánh 2 pipeline**: chạy đồng thời baseline + improved side-by-side.
+
+### Cách 2 — Chạy pipeline từ terminal (batch mode)
+
+```bash
+python -m src.pipeline.run \
+    --video data/test_videos/raw/demo_traffic.mp4 \
+    --weights runs/detect/runs/detect/train_v8s_ft_vnv3/weights/best.pt \
+    --tracker bytetrack.yaml \
+    --counting-config configs/counting_zones.json \
+    --video-key demo_traffic \
+    --out-csv results/tables/demo_events.csv \
+    --out-video results/videos/demo_out.mp4
+```
+
+Output:
+- `results/videos/demo_out.mp4` — video có bbox + line + counter overlay
+- `results/tables/demo_events.csv` — log từng lượt qua line
+
+### Cách 3 — Chạy baseline gốc (code giáo viên)
+
+```bash
+python baseline/10_traffic_counting.py \
+    --video data/test_videos/raw/demo_traffic.mp4 \
+    --model yolov8s.pt \
+    --line-y 474 \
+    --out-video baseline/baseline_out.mp4 \
+    --no-show
+```
+
+### Cách 4 — Sinh báo cáo tự động
+
+```bash
+# Chạy eval counting 2 pipeline
+python scripts/eval_counting_2pipelines.py
+
+# Sinh chart + báo cáo Markdown
+python scripts/gen_comparison_report.py
+
+# Sinh báo cáo Word
+python scripts/gen_report_docx.py
+
+# Sinh notebook báo cáo (đã embed chart)
+python scripts/gen_report_notebook.py
+```
+
+Kết quả nằm ở [docs/comparison_report/](docs/comparison_report/).
+
+---
+
+## Troubleshooting
+
+**Lỗi:** `ModuleNotFoundError: No module named 'src'`
+→ Chạy từ **root project**: `cd /path/to/vn_traffic_ai` rồi thêm `PYTHONPATH=.`:
+```bash
+PYTHONPATH=. python scripts/eval_counting_2pipelines.py
+```
+
+**Lỗi:** `RuntimeError: CUDA out of memory`
+→ Giảm `batch` (32 → 16) hoặc `imgsz` (640 → 512).
+
+**Lỗi:** Streamlit video output trắng, không play
+→ Cài `ffmpeg` (xem Bước 3). Streamlit cần H.264 transcode để play inline browser.
+
+**Lỗi:** `FileNotFoundError: runs/detect/.../best.pt`
+→ Chưa có weights improved. Chọn model khác trong dropdown, hoặc train theo mục "Quy trình training".
 
 ---
 

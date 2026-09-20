@@ -48,6 +48,106 @@ from src.stats.aggregator import (
 from src.evaluation.metrics import report as eval_report
 
 
+def run_baseline_pipeline(video: str, weights: str, line_y: int,
+                          out_video: str, out_csv: str,
+                          imgsz: int = 640, half: bool = True,
+                          progress_cb=None) -> tuple:
+    """Wrap baseline/10_traffic_counting.py cho Streamlit.
+
+    Baseline: 1 line ngang, chỉ đếm chiều xuống (last_cy < line_y <= cy),
+    không direction, không log per-event.
+
+    Trả về (events_list, totals_dict, class_names_list) khớp schema run_pipeline.
+    """
+    import cv2
+    import csv as _csv
+    from collections import defaultdict
+    from ultralytics import YOLO
+
+    VEHICLE_CLASSES = {"car", "motorcycle", "bus", "truck", "bicycle"}
+    model = YOLO(weights)
+    cap = cv2.VideoCapture(video)
+    fps = cap.get(cv2.CAP_PROP_FPS) or 25
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    writer = cv2.VideoWriter(out_video, cv2.VideoWriter_fourcc(*"mp4v"),
+                             fps, (w, h))
+
+    counted_ids = set()
+    class_counts = defaultdict(int)
+    track_history = {}
+    events = []
+    frame_idx = 0
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        results = model.track(frame, persist=True, conf=0.4, verbose=False,
+                              imgsz=imgsz, half=half, device=0)[0]
+        cv2.line(frame, (0, line_y), (frame.shape[1], line_y), (0, 0, 255), 2)
+
+        if results.boxes.id is not None:
+            for box, track_id in zip(results.boxes, results.boxes.id):
+                cls_name = model.names[int(box.cls[0])]
+                if cls_name not in VEHICLE_CLASSES:
+                    continue
+                tid = int(track_id)
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                cy = (y1 + y2) // 2
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.putText(frame, f"{cls_name} #{tid}", (x1, y1 - 8),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+
+                last_cy = track_history.get(tid)
+                if (last_cy is not None
+                        and last_cy < line_y <= cy
+                        and tid not in counted_ids):
+                    counted_ids.add(tid)
+                    class_counts[cls_name] += 1
+                    events.append({
+                        "frame": frame_idx,
+                        "time_sec": round(frame_idx / fps, 3),
+                        "line": "baseline_line",
+                        "direction": "down",
+                        "track_id": tid,
+                        "class_name": cls_name,
+                    })
+                track_history[tid] = cy
+
+        y_off = 30
+        cv2.putText(frame, f"Tong: {sum(class_counts.values())}",
+                    (10, y_off), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+        for cn, ct in class_counts.items():
+            y_off += 25
+            cv2.putText(frame, f"{cn}: {ct}", (10, y_off),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+
+        writer.write(frame)
+        frame_idx += 1
+        if progress_cb is not None:
+            progress_cb(frame_idx, total_frames)
+
+    cap.release(); writer.release()
+
+    if events:
+        Path(out_csv).parent.mkdir(parents=True, exist_ok=True)
+        with open(out_csv, "w", newline="", encoding="utf-8-sig") as f:
+            w_csv = _csv.DictWriter(f, fieldnames=["frame", "time_sec", "line",
+                                                    "direction", "track_id", "class_name"])
+            w_csv.writeheader(); w_csv.writerows(events)
+
+    # Chuyển dict class_counts -> totals schema {line: {direction: {class_id: count}}}
+    class_names_list = list(model.names.values())
+    name_to_id = {v: k for k, v in model.names.items()}
+    totals = {"baseline_line": {"down": {}}}
+    for cn, ct in class_counts.items():
+        if cn in name_to_id:
+            totals["baseline_line"]["down"][name_to_id[cn]] = ct
+    return events, totals, class_names_list
+
+
 st.set_page_config(page_title="VN Traffic AI", page_icon="", layout="wide")
 
 # ---------- Sidebar ----------
@@ -63,11 +163,22 @@ if not all_weights:
     st.sidebar.error("Không tìm thấy file .pt nào trong weights/ hoặc runs/")
     st.stop()
 
+pipeline_choice = st.sidebar.radio(
+    "Pipeline",
+    ["Improved (nhóm) — nhiều line + direction + log event",
+     "Baseline (giáo viên) — 1 line ngang, không direction"],
+    index=0,
+    help="Chọn logic pipeline áp dụng ở chế độ 'Chạy 1 pipeline'. "
+         "Ở chế độ 'So sánh 2 pipeline' thì mỗi bên chọn riêng."
+)
+pipeline_kind = "improved_pipeline" if pipeline_choice.startswith("Improved") else "baseline_pipeline"
+
 _preferred = ["weights/baseline_detrac4.pt"]
 _default_idx = next((i for i, w in enumerate(all_weights) if w in _preferred), 0)
 weights_path = st.sidebar.selectbox("Model weights", all_weights, index=_default_idx,
                                     help="baseline_detrac4.pt là model tốt nhất hiện tại (acc 97.7% trên demo).")
-tracker = st.sidebar.radio("Tracker", ["bytetrack.yaml", "botsort.yaml"])
+tracker = st.sidebar.radio("Tracker", ["bytetrack.yaml", "botsort.yaml"],
+                           help="Chỉ áp dụng cho Improved pipeline. Baseline pipeline dùng ByteTrack mặc định.")
 conf = st.sidebar.slider("Confidence threshold", 0.1, 0.9, 0.3, 0.05)
 iou = st.sidebar.slider("IoU threshold (NMS)", 0.1, 0.9, 0.5, 0.05)
 imgsz = st.sidebar.selectbox("Image size", [320, 416, 512, 640, 768], index=3,
@@ -133,20 +244,33 @@ with tab_run:
 
     if mode.startswith("⚖"):
         # ---------- Compare mode ----------
-        st.markdown("### Chọn 2 model để so sánh")
+        st.markdown("### Chọn 2 cấu hình để so sánh (pipeline + weights)")
         _bl_default = next((i for i, w in enumerate(all_weights)
                             if w.endswith("yolov8s.pt")), 0)
         _im_default = next((i for i, w in enumerate(all_weights)
                             if "ft_vnv3" in w and w.endswith("best.pt")),
                            next((i for i, w in enumerate(all_weights)
                                  if "4cls" in w and w.endswith("best.pt")), 0))
+        PIPELINE_OPTIONS = [
+            "Baseline (giáo viên) — 1 line, không direction, không log event",
+            "Improved (nhóm) — nhiều line + direction + log event + stats",
+        ]
         c1, c2 = st.columns(2)
         with c1:
-            bl_weights = st.selectbox("Baseline weights", all_weights, index=_bl_default,
-                                      help="Thường chọn yolov8s.pt (COCO gốc, chưa fine-tune).")
+            st.markdown("**Side A — Baseline**")
+            bl_pipeline = st.selectbox("Pipeline A", PIPELINE_OPTIONS, index=0, key="pip_a")
+            bl_weights = st.selectbox("Weights A", all_weights, index=_bl_default, key="w_a",
+                                      help="Mặc định yolov8s.pt COCO gốc.")
         with c2:
-            im_weights = st.selectbox("Improved weights", all_weights, index=_im_default,
-                                      help="Model fine-tune trên dataset VN, ví dụ train_v8s_ft_vnv3/best.pt.")
+            st.markdown("**Side B — Improved**")
+            im_pipeline = st.selectbox("Pipeline B", PIPELINE_OPTIONS, index=1, key="pip_b")
+            im_weights = st.selectbox("Weights B", all_weights, index=_im_default, key="w_b",
+                                      help="Mặc định best.pt fine-tune VN.")
+
+        _kind_bl = "baseline_pipeline" if bl_pipeline.startswith("Baseline") else "improved_pipeline"
+        _kind_im = "baseline_pipeline" if im_pipeline.startswith("Baseline") else "improved_pipeline"
+        st.caption(f"➡ Side A: **{_kind_bl}** + `{bl_weights}`  |  "
+                   f"Side B: **{_kind_im}** + `{im_weights}`")
 
         run_compare = st.button("⚖ Chạy so sánh 2 pipeline",
                                 type="primary",
@@ -176,8 +300,12 @@ with tab_run:
                 }
 
             results = {}
-            for tag, wpath in [("baseline", bl_weights), ("improved", im_weights)]:
-                st.info(f"Đang chạy pipeline **{tag}** với `{wpath}`...")
+            side_configs = [
+                ("baseline", bl_weights, _kind_bl, bl_pipeline),
+                ("improved", im_weights, _kind_im, im_pipeline),
+            ]
+            for tag, wpath, kind, label in side_configs:
+                st.info(f"Đang chạy **{label.split('—')[0].strip()}** + `{wpath}`...")
                 progress = st.progress(0, text=f"{tag} — frame 0")
 
                 def _cb(cur, total, _tag=tag, _p=progress):
@@ -186,16 +314,32 @@ with tab_run:
                                     text=f"{_tag} — frame {cur}/{total}")
 
                 t0 = _time.time()
-                events, totals, class_names = run_pipeline(
-                    video=st.session_state["tmp_video"],
-                    weights=str(ROOT / wpath),
-                    lines=[line],
-                    tracker=tracker,
-                    conf=conf, iou=iou, imgsz=imgsz, half=use_half,
-                    out_csv=str(paths[tag]["csv"]),
-                    out_video=str(paths[tag]["video"]),
-                    progress_cb=_cb,
-                )
+                if kind == "baseline_pipeline":
+                    # Convert line_y_pct → absolute pixel Y
+                    if line_direction == "horizontal":
+                        line_y_abs = int(h * line_y_pct / 100)
+                    else:
+                        line_y_abs = int(h * 0.5)  # baseline chỉ hỗ trợ line ngang
+                    events, totals, class_names = run_baseline_pipeline(
+                        video=st.session_state["tmp_video"],
+                        weights=str(ROOT / wpath),
+                        line_y=line_y_abs,
+                        out_video=str(paths[tag]["video"]),
+                        out_csv=str(paths[tag]["csv"]),
+                        imgsz=imgsz, half=use_half,
+                        progress_cb=_cb,
+                    )
+                else:
+                    events, totals, class_names = run_pipeline(
+                        video=st.session_state["tmp_video"],
+                        weights=str(ROOT / wpath),
+                        lines=[line],
+                        tracker=tracker,
+                        conf=conf, iou=iou, imgsz=imgsz, half=use_half,
+                        out_csv=str(paths[tag]["csv"]),
+                        out_video=str(paths[tag]["video"]),
+                        progress_cb=_cb,
+                    )
                 dt = _time.time() - t0
                 progress.empty()
 
@@ -207,6 +351,8 @@ with tab_run:
 
                 results[tag] = {
                     "weights": wpath,
+                    "pipeline_kind": kind,
+                    "pipeline_label": label.split("—")[0].strip(),
                     "events": events,
                     "totals": totals,
                     "class_names": class_names,
@@ -214,10 +360,17 @@ with tab_run:
                     "fps": meta["n_frames"] / dt if dt > 0 else 0,
                     "play_path": play_path,
                     "raw_video": str(paths[tag]["video"]),
+                    "csv": str(paths[tag]["csv"]),
                 }
 
             st.session_state["compare_results"] = results
-            st.success("Xong! Kéo xuống xem so sánh.")
+            # Đưa Improved làm nguồn cho Tab Stats + Eval (mặc định)
+            st.session_state["events_csv"] = results["improved"]["csv"]
+            st.session_state["totals"] = results["improved"]["totals"]
+            st.session_state["class_names"] = results["improved"]["class_names"]
+            st.session_state["stats_source_tag"] = "improved"
+            st.success("Xong! Kéo xuống xem so sánh. "
+                       "Tab Thống kê & Đánh giá đang lấy dữ liệu từ Improved.")
 
         # ---------- Display compare results ----------
         if "compare_results" in st.session_state:
@@ -226,10 +379,10 @@ with tab_run:
 
             st.markdown("## Kết quả so sánh side-by-side")
             c1, c2 = st.columns(2)
-            for col, tag, r in [(c1, "Baseline", bl_r), (c2, "Improved", im_r)]:
+            for col, tag, r in [(c1, "Side A", bl_r), (c2, "Side B", im_r)]:
                 with col:
-                    st.markdown(f"### ▶ {tag}")
-                    st.caption(f"`{r['weights']}`")
+                    st.markdown(f"### ▶ {tag}: {r['pipeline_label']}")
+                    st.caption(f"Pipeline: `{r['pipeline_kind']}`  |  Weights: `{r['weights']}`")
                     st.video(r["play_path"])
 
                     def _totals_to_df(totals, class_names):
@@ -341,20 +494,33 @@ with tab_run:
                 progress.progress(min(cur / total, 1.0),
                                   text=f"Frame {cur}/{total}")
 
-        with st.spinner("Detecting + tracking + counting..."):
-            events, totals, class_names = run_pipeline(
-                video=st.session_state["tmp_video"],
-                weights=str(ROOT / weights_path),
-                lines=[line],
-                tracker=tracker,
-                conf=conf, iou=iou, imgsz=imgsz, half=use_half,
-                out_csv=str(out_csv),
-                out_video=str(out_video),
-                progress_cb=_cb,
-            )
+        _pipe_label = pipeline_choice.split("—")[0].strip()
+        with st.spinner(f"[{_pipe_label}] Detecting + tracking + counting..."):
+            if pipeline_kind == "baseline_pipeline":
+                line_y_abs = int(h * line_y_pct / 100) if line_direction == "horizontal" else int(h * 0.5)
+                events, totals, class_names = run_baseline_pipeline(
+                    video=st.session_state["tmp_video"],
+                    weights=str(ROOT / weights_path),
+                    line_y=line_y_abs,
+                    out_video=str(out_video),
+                    out_csv=str(out_csv),
+                    imgsz=imgsz, half=use_half,
+                    progress_cb=_cb,
+                )
+            else:
+                events, totals, class_names = run_pipeline(
+                    video=st.session_state["tmp_video"],
+                    weights=str(ROOT / weights_path),
+                    lines=[line],
+                    tracker=tracker,
+                    conf=conf, iou=iou, imgsz=imgsz, half=use_half,
+                    out_csv=str(out_csv),
+                    out_video=str(out_video),
+                    progress_cb=_cb,
+                )
 
         progress.empty()
-        st.success(f"Xong! {len(events)} lượt qua line.")
+        st.success(f"[{_pipe_label}] Xong! {len(events)} lượt qua line.")
         st.session_state["events_csv"] = str(out_csv)
         st.session_state["out_video"] = str(out_video)
         st.session_state["totals"] = totals
@@ -391,6 +557,21 @@ with tab_stats:
     if "events_csv" not in st.session_state:
         st.info("Chạy pipeline ở tab đầu tiên để có dữ liệu thống kê.")
     else:
+        # Nếu ở compare mode, cho phép chọn pipeline nguồn
+        if "compare_results" in st.session_state:
+            _cr = st.session_state["compare_results"]
+            _sel = st.radio("Xem thống kê của pipeline nào?",
+                            ["Improved (fine-tune)", "Baseline (COCO)"],
+                            horizontal=True,
+                            index=0 if st.session_state.get("stats_source_tag") == "improved" else 1,
+                            key="stats_source_radio")
+            _tag = "improved" if _sel.startswith("Improved") else "baseline"
+            st.session_state["events_csv"] = _cr[_tag]["csv"]
+            st.session_state["totals"] = _cr[_tag]["totals"]
+            st.session_state["class_names"] = _cr[_tag]["class_names"]
+            st.session_state["stats_source_tag"] = _tag
+            st.caption(f"Đang thống kê **{_sel}** — weights: `{_cr[_tag]['weights']}`")
+
         df = pd.read_csv(st.session_state["events_csv"])
         if df.empty:
             st.warning("Không có event nào (0 xe qua line). Thử giảm confidence hoặc đổi vị trí line.")
@@ -519,6 +700,21 @@ with tab_eval:
     if "events_csv" not in st.session_state:
         st.info("Chạy pipeline trước để có kết quả dự đoán.")
     else:
+        # Nếu ở compare mode, cho phép chọn pipeline nguồn
+        if "compare_results" in st.session_state:
+            _cr = st.session_state["compare_results"]
+            _sel = st.radio("Đánh giá pipeline nào?",
+                            ["Improved (fine-tune)", "Baseline (COCO)"],
+                            horizontal=True,
+                            index=0 if st.session_state.get("stats_source_tag") == "improved" else 1,
+                            key="eval_source_radio")
+            _tag = "improved" if _sel.startswith("Improved") else "baseline"
+            st.session_state["events_csv"] = _cr[_tag]["csv"]
+            st.session_state["totals"] = _cr[_tag]["totals"]
+            st.session_state["class_names"] = _cr[_tag]["class_names"]
+            st.session_state["stats_source_tag"] = _tag
+            st.caption(f"Đang đánh giá **{_sel}** — weights: `{_cr[_tag]['weights']}`")
+
         st.markdown("Upload JSON ground truth (đếm tay). "
                     "Cấu trúc: `{'counts_by_class': {'car': N, 'bus': N, ...}}`")
 
@@ -527,12 +723,18 @@ with tab_eval:
         col_x, col_y = st.columns(2)
         with col_x:
             st.markdown("#### Hoặc điền tay bên dưới")
+            st.caption("⚠ Nhập số xe **thật** bạn đếm được trong video (không phải số model dự đoán). "
+                       "Nếu để mặc định = 0 sẽ không đánh giá đúng.")
             df = pd.read_csv(st.session_state["events_csv"])
             preds = df["class_name"].value_counts().to_dict() if not df.empty else {}
             gt_manual = {}
             for cls in ["motorcycle", "car", "bus", "truck", "van", "others", "bicycle"]:
-                gt_manual[cls] = st.number_input(f"GT — {cls}", min_value=0,
-                                                 value=preds.get(cls, 0), step=1)
+                pred_val = preds.get(cls, 0)
+                gt_manual[cls] = st.number_input(
+                    f"GT — {cls}  (model dự đoán: {pred_val})",
+                    min_value=0, value=0, step=1,
+                    key=f"gt_input_{cls}",
+                )
 
         with col_y:
             if gt_file is not None:
