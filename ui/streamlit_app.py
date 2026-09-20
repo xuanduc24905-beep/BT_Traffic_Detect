@@ -6,12 +6,35 @@ Chạy:
     streamlit run ui/streamlit_app.py
 """
 import json
+import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+
+
+def transcode_to_h264(src: str, dst: str) -> bool:
+    """Convert video sang H.264 để browser (st.video) play inline được.
+
+    Trả về True nếu thành công. Cần ffmpeg trong PATH.
+    """
+    if shutil.which("ffmpeg") is None:
+        return False
+    try:
+        subprocess.run(
+            ["ffmpeg", "-y", "-loglevel", "error",
+             "-i", src, "-c:v", "libx264", "-preset", "veryfast",
+             "-crf", "23", "-pix_fmt", "yuv420p",
+             "-movflags", "+faststart",
+             "-an", dst],
+            check=True, capture_output=True,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -101,7 +124,199 @@ with tab_run:
         )
         st.session_state["video_meta"] = dict(w=w, h=h, fps=fps, n_frames=n_frames)
 
-    if st.button(" Chạy pipeline", type="primary", disabled="tmp_video" not in st.session_state):
+    st.markdown("---")
+    mode = st.radio(
+        "Chế độ",
+        ["▶ Chạy 1 pipeline", "⚖ So sánh 2 pipeline (Baseline vs Improved)"],
+        horizontal=True,
+    )
+
+    if mode.startswith("⚖"):
+        # ---------- Compare mode ----------
+        st.markdown("### Chọn 2 model để so sánh")
+        _bl_default = next((i for i, w in enumerate(all_weights)
+                            if w.endswith("yolov8s.pt")), 0)
+        _im_default = next((i for i, w in enumerate(all_weights)
+                            if "ft_vnv3" in w and w.endswith("best.pt")),
+                           next((i for i, w in enumerate(all_weights)
+                                 if "4cls" in w and w.endswith("best.pt")), 0))
+        c1, c2 = st.columns(2)
+        with c1:
+            bl_weights = st.selectbox("Baseline weights", all_weights, index=_bl_default,
+                                      help="Thường chọn yolov8s.pt (COCO gốc, chưa fine-tune).")
+        with c2:
+            im_weights = st.selectbox("Improved weights", all_weights, index=_im_default,
+                                      help="Model fine-tune trên dataset VN, ví dụ train_v8s_ft_vnv3/best.pt.")
+
+        run_compare = st.button("⚖ Chạy so sánh 2 pipeline",
+                                type="primary",
+                                disabled="tmp_video" not in st.session_state)
+
+        if run_compare:
+            import time as _time
+            meta = st.session_state["video_meta"]
+            w, h = meta["w"], meta["h"]
+
+            if line_direction == "horizontal":
+                y = int(h * line_y_pct / 100)
+                line = Line(name="line_1", p1=(50, y), p2=(w - 50, y),
+                            count_direction=count_direction)
+            else:
+                xln = int(w * line_y_pct / 100)
+                line = Line(name="line_1", p1=(xln, 50), p2=(xln, h - 50),
+                            count_direction=count_direction)
+
+            out_dir = ROOT / "results"
+            stem = Path(st.session_state["tmp_video"]).stem
+            paths = {}
+            for tag, wpath in [("baseline", bl_weights), ("improved", im_weights)]:
+                paths[tag] = {
+                    "video": out_dir / "videos" / f"cmp_{tag}_{stem}.mp4",
+                    "csv":   out_dir / "tables" / f"cmp_{tag}_{stem}.csv",
+                }
+
+            results = {}
+            for tag, wpath in [("baseline", bl_weights), ("improved", im_weights)]:
+                st.info(f"Đang chạy pipeline **{tag}** với `{wpath}`...")
+                progress = st.progress(0, text=f"{tag} — frame 0")
+
+                def _cb(cur, total, _tag=tag, _p=progress):
+                    if total > 0:
+                        _p.progress(min(cur/total, 1.0),
+                                    text=f"{_tag} — frame {cur}/{total}")
+
+                t0 = _time.time()
+                events, totals, class_names = run_pipeline(
+                    video=st.session_state["tmp_video"],
+                    weights=str(ROOT / wpath),
+                    lines=[line],
+                    tracker=tracker,
+                    conf=conf, iou=iou, imgsz=imgsz, half=use_half,
+                    out_csv=str(paths[tag]["csv"]),
+                    out_video=str(paths[tag]["video"]),
+                    progress_cb=_cb,
+                )
+                dt = _time.time() - t0
+                progress.empty()
+
+                h264_p = paths[tag]["video"].with_name(paths[tag]["video"].stem + "_h264.mp4")
+                if transcode_to_h264(str(paths[tag]["video"]), str(h264_p)):
+                    play_path = str(h264_p)
+                else:
+                    play_path = str(paths[tag]["video"])
+
+                results[tag] = {
+                    "weights": wpath,
+                    "events": events,
+                    "totals": totals,
+                    "class_names": class_names,
+                    "runtime": dt,
+                    "fps": meta["n_frames"] / dt if dt > 0 else 0,
+                    "play_path": play_path,
+                    "raw_video": str(paths[tag]["video"]),
+                }
+
+            st.session_state["compare_results"] = results
+            st.success("Xong! Kéo xuống xem so sánh.")
+
+        # ---------- Display compare results ----------
+        if "compare_results" in st.session_state:
+            results = st.session_state["compare_results"]
+            bl_r, im_r = results["baseline"], results["improved"]
+
+            st.markdown("## Kết quả so sánh side-by-side")
+            c1, c2 = st.columns(2)
+            for col, tag, r in [(c1, "Baseline", bl_r), (c2, "Improved", im_r)]:
+                with col:
+                    st.markdown(f"### ▶ {tag}")
+                    st.caption(f"`{r['weights']}`")
+                    st.video(r["play_path"])
+
+                    def _totals_to_df(totals, class_names):
+                        # totals: {line: {direction: {class_id: count}}}
+                        rows = []
+                        for ln, dirs in totals.items():
+                            for direction, per_cls in dirs.items():
+                                for cid, n in per_cls.items():
+                                    rows.append({
+                                        "line": ln, "direction": direction,
+                                        "class": class_names[int(cid)] if class_names else str(cid),
+                                        "count": n,
+                                    })
+                        return pd.DataFrame(rows)
+
+                    df_tot = _totals_to_df(r["totals"], r["class_names"])
+                    if df_tot.empty:
+                        st.warning("Không đếm được lượt nào qua line.")
+                    else:
+                        st.dataframe(df_tot.groupby("class")["count"].sum().reset_index(),
+                                     use_container_width=True, hide_index=True)
+
+                    st.metric("Tổng đếm", int(sum(df_tot["count"]) if not df_tot.empty else 0))
+                    st.metric("Runtime", f"{r['runtime']:.2f}s")
+                    st.metric("FPS", f"{r['fps']:.1f}")
+
+            # ---------- Summary + chart ----------
+            st.markdown("## So sánh chỉ số chính")
+            total_bl = sum(sum(c.values()) for d in bl_r["totals"].values() for c in d.values())
+            total_im = sum(sum(c.values()) for d in im_r["totals"].values() for c in d.values())
+            speedup = im_r["fps"] / bl_r["fps"] if bl_r["fps"] > 0 else 0
+            diff_count = total_im - total_bl
+            df_sum = pd.DataFrame([
+                {"Chỉ số": "Tổng đếm", "Baseline": total_bl, "Improved": total_im,
+                 "Chênh lệch": f"{diff_count:+d}"},
+                {"Chỉ số": "Runtime (s)", "Baseline": round(bl_r["runtime"], 2),
+                 "Improved": round(im_r["runtime"], 2),
+                 "Chênh lệch": f"{im_r['runtime']-bl_r['runtime']:+.2f}"},
+                {"Chỉ số": "FPS", "Baseline": round(bl_r["fps"], 1),
+                 "Improved": round(im_r["fps"], 1),
+                 "Chênh lệch": f"{speedup:.2f}x nhanh hơn" if speedup >= 1 else f"{1/speedup:.2f}x chậm hơn"},
+            ])
+            st.dataframe(df_sum, use_container_width=True, hide_index=True)
+
+            # Per-class chart
+            def _class_dict(r):
+                d = {}
+                for _, dirs in r["totals"].items():
+                    for _, per_cls in dirs.items():
+                        for cid, n in per_cls.items():
+                            name = r["class_names"][int(cid)] if r["class_names"] else str(cid)
+                            d[name] = d.get(name, 0) + n
+                return d
+
+            bl_cls = _class_dict(bl_r)
+            im_cls = _class_dict(im_r)
+            all_cls = sorted(set(bl_cls) | set(im_cls))
+            if all_cls:
+                import matplotlib.pyplot as _plt
+                import numpy as _np
+                fig, ax = _plt.subplots(figsize=(8, 4))
+                x = _np.arange(len(all_cls)); wbar = 0.38
+                bl_v = [bl_cls.get(c, 0) for c in all_cls]
+                im_v = [im_cls.get(c, 0) for c in all_cls]
+                ax.bar(x - wbar/2, bl_v, wbar, label="Baseline", color="#7f7f7f", edgecolor="black")
+                ax.bar(x + wbar/2, im_v, wbar, label="Improved", color="#d62728", edgecolor="black")
+                for xi, v in zip(x - wbar/2, bl_v):
+                    if v > 0: ax.text(xi, v+0.3, str(v), ha="center", fontsize=9)
+                for xi, v in zip(x + wbar/2, im_v):
+                    if v > 0: ax.text(xi, v+0.3, str(v), ha="center", fontsize=9)
+                ax.set_xticks(x); ax.set_xticklabels(all_cls, rotation=15)
+                ax.set_ylabel("Số phương tiện đếm được")
+                ax.set_title("Counting per class — Baseline vs Improved")
+                ax.legend(); ax.grid(axis="y", alpha=0.3)
+                fig.tight_layout()
+                st.pyplot(fig)
+
+            st.info(
+                f"**Đọc kết quả:** Improved đếm {total_im} vs Baseline {total_bl} "
+                f"(chênh lệch {diff_count:+d}). Improved chạy nhanh hơn Baseline "
+                f"{speedup:.2f}× ({im_r['fps']:.1f} vs {bl_r['fps']:.1f} FPS)."
+                if speedup >= 1 else
+                f"**Đọc kết quả:** Improved đếm {total_im} vs Baseline {total_bl}. "
+                f"Improved chậm hơn Baseline ({im_r['fps']:.1f} vs {bl_r['fps']:.1f} FPS)."
+            )
+
+    elif st.button(" Chạy pipeline", type="primary", disabled="tmp_video" not in st.session_state):
         meta = st.session_state["video_meta"]
         w, h = meta["w"], meta["h"]
 
@@ -145,11 +360,31 @@ with tab_run:
         st.session_state["totals"] = totals
         st.session_state["class_names"] = class_names
 
-    if "out_video" in st.session_state:
+        # Transcode sang H.264 để play inline trong browser (mp4v không play được)
+        h264_video = out_video.with_name(out_video.stem + "_h264.mp4")
+        with st.spinner("Chuyển codec H.264 để xem trực tiếp trong trình duyệt..."):
+            if transcode_to_h264(str(out_video), str(h264_video)):
+                st.session_state["out_video_h264"] = str(h264_video)
+            else:
+                st.session_state["out_video_h264"] = None
+                st.warning("Không tìm thấy ffmpeg hoặc transcode thất bại. "
+                           "Video tải về sẽ vẫn xem được, nhưng preview inline có thể lỗi.")
+
+    if not mode.startswith("⚖") and "out_video" in st.session_state:
         st.markdown("### Video output")
-        st.video(st.session_state["out_video"])
-        with open(st.session_state["out_video"], "rb") as f:
-            st.download_button("Download video", f, file_name=Path(st.session_state["out_video"]).name)
+        # Ưu tiên bản H.264 (browser play được); fallback về mp4v gốc
+        play_path = st.session_state.get("out_video_h264") or st.session_state["out_video"]
+        st.video(play_path)
+        c1, c2 = st.columns(2)
+        with c1:
+            with open(st.session_state["out_video"], "rb") as f:
+                st.download_button("Tải video (mp4v gốc)", f,
+                                   file_name=Path(st.session_state["out_video"]).name)
+        with c2:
+            if st.session_state.get("out_video_h264"):
+                with open(st.session_state["out_video_h264"], "rb") as f:
+                    st.download_button("Tải video (H.264, mở mọi player)", f,
+                                       file_name=Path(st.session_state["out_video_h264"]).name)
 
 # ---------- Tab 2: Stats ----------
 with tab_stats:

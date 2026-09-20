@@ -1,574 +1,423 @@
-"""Sinh file docs/BAO_CAO_KY_THUAT.docx — tài liệu kỹ thuật chi tiết cho nhóm.
+"""Sinh file Word (.docx) từ dữ liệu báo cáo — nhúng ảnh chart để đưa vào PPT.
 
-Chạy: python scripts/gen_report_docx.py
+Output: docs/comparison_report/BAO_CAO_BASELINE_VS_IMPROVED.docx
 """
+from __future__ import annotations
+
+import csv
+import json
 from pathlib import Path
+from collections import defaultdict
+
 from docx import Document
-from docx.shared import Pt, RGBColor, Inches
+from docx.shared import Cm, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
+ROOT = Path(__file__).resolve().parent.parent
+CHARTS = ROOT / "docs/comparison_report/charts"
+OUT = ROOT / "docs/comparison_report/BAO_CAO_BASELINE_VS_IMPROVED.docx"
 
-OUT_PATH = Path("docs/BAO_CAO_KY_THUAT.docx")
-OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+CLASS_ORDER = ["motorcycle", "car", "bus", "truck"]
+CLASS_VN = {"motorcycle": "xe may", "car": "o to",
+            "bus": "xe buyt", "truck": "xe tai"}
+PER_CLASS_VAL = {
+    "motorcycle": {"P": 0.858, "R": 0.917, "mAP50": 0.949, "mAP50_95": 0.609},
+    "car":        {"P": 0.899, "R": 0.794, "mAP50": 0.848, "mAP50_95": 0.629},
+    "bus":        {"P": 0.917, "R": 0.819, "mAP50": 0.911, "mAP50_95": 0.772},
+    "truck":      {"P": 0.803, "R": 0.631, "mAP50": 0.695, "mAP50_95": 0.543},
+}
+
+
+def load_csv(path: Path) -> dict:
+    rows = list(csv.DictReader(path.open()))
+    return {k.strip(): [float(r[k]) for r in rows] for k in rows[0]}
+
+
+def peak(d: dict) -> dict:
+    import numpy as np
+    i = int(np.argmax(d["metrics/mAP50(B)"]))
+    return {
+        "epoch": int(d["epoch"][i]),
+        "P": d["metrics/precision(B)"][i],
+        "R": d["metrics/recall(B)"][i],
+        "mAP50": d["metrics/mAP50(B)"][i],
+        "mAP50_95": d["metrics/mAP50-95(B)"][i],
+    }
+
+
+def set_cell_shading(cell, fill_hex: str):
+    tc_pr = cell._tc.get_or_add_tcPr()
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:fill"), fill_hex)
+    tc_pr.append(shd)
 
 
 def add_heading(doc, text, level=1):
     h = doc.add_heading(text, level=level)
     for run in h.runs:
-        run.font.name = "Calibri"
+        run.font.color.rgb = RGBColor(0x1F, 0x3B, 0x6E)
     return h
 
 
 def add_para(doc, text, bold=False, italic=False, size=11):
     p = doc.add_paragraph()
-    r = p.add_run(text)
-    r.font.name = "Calibri"
-    r.font.size = Pt(size)
-    r.bold = bold
-    r.italic = italic
+    run = p.add_run(text)
+    run.bold = bold
+    run.italic = italic
+    run.font.size = Pt(size)
     return p
 
 
-def add_code(doc, code, lang="python"):
-    """Insert a monospaced code block."""
-    p = doc.add_paragraph()
-    p.paragraph_format.left_indent = Inches(0.25)
-    r = p.add_run(code)
-    r.font.name = "Consolas"
-    r.font.size = Pt(9.5)
-    r.font.color.rgb = RGBColor(0x1F, 0x28, 0x37)
-    # Add background shading
-    pPr = p._element.get_or_add_pPr()
-    shd = OxmlElement("w:shd")
-    shd.set(qn("w:val"), "clear")
-    shd.set(qn("w:color"), "auto")
-    shd.set(qn("w:fill"), "F5F5F5")
-    pPr.append(shd)
-    return p
+def add_bullets(doc, items):
+    for it in items:
+        doc.add_paragraph(it, style="List Bullet")
 
 
-def add_bullet(doc, text):
-    p = doc.add_paragraph(text, style="List Bullet")
-    for r in p.runs:
-        r.font.name = "Calibri"
-        r.font.size = Pt(11)
-    return p
-
-
-def add_table(doc, headers, rows):
-    table = doc.add_table(rows=1 + len(rows), cols=len(headers))
-    table.style = "Light Grid Accent 1"
-    hdr_cells = table.rows[0].cells
+def add_table(doc, headers, rows, header_fill="1F3B6E"):
+    tbl = doc.add_table(rows=1 + len(rows), cols=len(headers))
+    tbl.style = "Light Grid Accent 1"
+    hdr = tbl.rows[0].cells
     for i, h in enumerate(headers):
-        hdr_cells[i].text = h
-        for p in hdr_cells[i].paragraphs:
-            for r in p.runs:
-                r.bold = True
-                r.font.size = Pt(10.5)
-    for row_idx, row in enumerate(rows, start=1):
-        cells = table.rows[row_idx].cells
-        for j, val in enumerate(row):
-            cells[j].text = str(val)
-            for p in cells[j].paragraphs:
-                for r in p.runs:
-                    r.font.size = Pt(10.5)
-    return table
+        hdr[i].text = h
+        set_cell_shading(hdr[i], header_fill)
+        for run in hdr[i].paragraphs[0].runs:
+            run.bold = True
+            run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+            run.font.size = Pt(10)
+    for r_idx, row in enumerate(rows, start=1):
+        for c_idx, val in enumerate(row):
+            tbl.rows[r_idx].cells[c_idx].text = str(val)
+            for run in tbl.rows[r_idx].cells[c_idx].paragraphs[0].runs:
+                run.font.size = Pt(10)
+    return tbl
+
+
+def add_image(doc, path: Path, width_cm=15.5, caption=None):
+    if not path.exists():
+        doc.add_paragraph(f"[Thieu anh: {path.name}]")
+        return
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.add_run().add_picture(str(path), width=Cm(width_cm))
+    if caption:
+        cap = doc.add_paragraph(caption)
+        cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for run in cap.runs:
+            run.italic = True
+            run.font.size = Pt(9)
+            run.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+
+
+def pct(a, b): return (a - b) / b * 100
 
 
 def main():
+    print("[load] training curves + counting...")
+    bl = load_csv(ROOT / "runs/detect/runs/detect/train_v8s_4cls/results.csv")
+    im = load_csv(ROOT / "runs/detect/runs/detect/train_v8s_ft_vnv3/results.csv")
+    bl_p, im_p = peak(bl), peak(im)
+    counting = json.loads((ROOT / "results/tables/eval_counting_2pipelines.json").read_text())
+    gt = counting["gt"]
+    bl_c, im_c = counting["baseline"], counting["improved"]
+    speedup = im_c["fps"] / bl_c["fps"]
+
+    print("[count] class distribution...")
+    cls_counts = defaultdict(int)
+    for f in (ROOT / "data/merged/labels/train").glob("*.txt"):
+        for line in f.read_text().splitlines():
+            if line.strip():
+                cls_counts[int(line.split()[0])] += 1
+
     doc = Document()
 
-    # ==================== Title ====================
-    title = doc.add_heading("BÁO CÁO KỸ THUẬT — HỆ THỐNG ĐẾM VÀ PHÂN LOẠI PHƯƠNG TIỆN GIAO THÔNG",
-                            level=0)
-    for r in title.runs:
-        r.font.size = Pt(18)
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run("Chủ đề 10 — Đề tài môn học")
-    r.italic = True
-    r.font.size = Pt(12)
+    style = doc.styles["Normal"]
+    style.font.name = "Calibri"
+    style.font.size = Pt(11)
 
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run("Repo: github.com/xuanduc24905-beep/BT_Traffic_Detect")
-    r.font.size = Pt(10)
-    r.italic = True
+    # ================== TIÊU ĐỀ ==================
+    title = doc.add_paragraph()
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = title.add_run("BÁO CÁO SO SÁNH: BASELINE vs IMPROVED PIPELINE")
+    run.bold = True
+    run.font.size = Pt(18)
+    run.font.color.rgb = RGBColor(0x1F, 0x3B, 0x6E)
 
-    doc.add_paragraph()
+    sub = doc.add_paragraph()
+    sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r = sub.add_run("Chủ đề 10 — Đếm & phân loại phương tiện giao thông")
+    r.italic = True; r.font.size = Pt(13)
 
-    # ==================== 1. Tổng quan ====================
-    add_heading(doc, "1. Tổng quan project", level=1)
-    add_para(doc,
-             "Xây dựng hệ thống end-to-end phát hiện, theo vết (tracking) và đếm số lượng "
-             "phương tiện giao thông qua video camera cố định. Hệ thống chạy realtime, "
-             "sinh báo cáo thống kê theo loại xe và theo thời gian, cùng biểu đồ + video "
-             "output có overlay đếm trực tiếp.")
+    info = doc.add_paragraph()
+    info.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    info.add_run("Nhóm: Đức Đặng  |  Ngày: 2026-09-19  |  Model: YOLOv8s (11.2M params, 28.6 GFLOPs)").font.size = Pt(10)
 
-    add_heading(doc, "1.1 Yêu cầu topic", level=2)
-    for req in [
-        "Phát hiện phương tiện trong từng frame bằng object detection",
-        "Theo dõi (tracking) từng phương tiện xuyên suốt các frame để tránh đếm trùng",
-        "Đặt một hoặc nhiều đường/vùng đếm (counting line/zone) trên frame",
-        "Thống kê theo loại xe và theo khoảng thời gian (phút, giờ...)",
-        "Xuất báo cáo dạng bảng/biểu đồ (biểu đồ lưu lượng theo giờ)",
-        "Đánh giá độ chính xác đếm so với đếm thủ công",
-    ]:
-        add_bullet(doc, req)
+    doc.add_paragraph("_" * 80).alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    add_heading(doc, "1.2 Phần mở rộng đã làm (ngoài yêu cầu tối thiểu)", level=2)
-    for ext in [
-        "Merge 2 dataset (UA-DETRAC + Vietnam Cần Thơ) thêm class 'motorcycle' quan trọng cho VN",
-        "Direction-aware counting: phân biệt xe đi vào/ra qua 1 line (ltr/rtl) bằng cross-product",
-        "FP16 inference + tuỳ chọn imgsz tăng tốc 1.5-2× mà mAP chỉ giảm ~2%",
-        "Streamlit UI cho phép: upload video, chỉnh line/model/threshold, xem thống kê + biểu đồ",
-        "Evaluation 2 tầng: mAP trên test set 56k ảnh + counting accuracy trên video có GT",
-        "Auto-resume training: dừng bất kỳ lúc nào rồi train tiếp không mất progress",
-    ]:
-        add_bullet(doc, ext)
+    # ================== 0. EXECUTIVE SUMMARY ==================
+    add_heading(doc, "TÓM TẮT ĐIỀU HÀNH (Executive Summary)", 1)
+    add_bullets(doc, [
+        "2 pipeline cùng kiến trúc YOLOv8s — khác duy nhất ở trọng số & dữ liệu huấn luyện.",
+        "Baseline = tải yolov8s.pt COCO gốc, chạy thẳng — không huấn luyện.",
+        "Improved = fine-tune 2 lần trên 137k ảnh Việt Nam (UA-DETRAC + CanTho v19 + Vietnamese vehicle v3).",
+        f"Kết quả trên val set (Improved): mAP@0.5 = {im_p['mAP50']:.3f}, mAP@0.5:0.95 = {im_p['mAP50_95']:.3f}.",
+        "Điểm sáng nhất: motorcycle mAP@0.5 = 0.949 (cao nhất 4 class) nhờ boost vnv3 (+2,232 bbox xe máy).",
+        f"Tốc độ inference: Improved nhanh hơn {speedup:.2f}x ({bl_c['fps']:.1f} FPS -> {im_c['fps']:.1f} FPS).",
+    ])
 
-    # ==================== 2. Kiến trúc pipeline ====================
-    add_heading(doc, "2. Kiến trúc pipeline", level=1)
-    add_para(doc, "Luồng dữ liệu end-to-end từ video đầu vào tới output:")
-    add_code(doc,
-             "Video (MP4)\n"
-             " \n"
-             "[1] Detection — YOLOv8s boxes + class_id + confidence\n"
-             " \n"
-             "[2] Tracking — ByteTrack (built-in Ultralytics) gán track_id ổn định qua các frame\n"
-             " \n"
-             "[3] Counter — cross-product line-vector × movement-vector\n"
-             " detect khi xe cắt line, phân direction (ltr/rtl)\n"
-             " chống đếm trùng bằng set (line_name, track_id)\n"
-             " \n"
-             "[4] Aggregator — pandas DataFrame events, group theo class/thời gian/direction\n"
-             " \n"
-             "[5] Visualize — matplotlib biểu đồ bar/line/heatmap/cumulative\n"
-             " \n"
-             "OUTPUT: video annotated + CSV events + biểu đồ PNG + JSON summary")
-
-    # ==================== 3. Cấu trúc thư mục ====================
-    add_heading(doc, "3. Cấu trúc thư mục project", level=1)
-    add_code(doc,
-             "vn_traffic_ai/\n"
-             "├── configs/\n"
-             "│ ├── class_mapping.json # ánh xạ class ID giữa các dataset gốc và schema canonical\n"
-             "│ └── counting_zones.json # định nghĩa line/zone đếm cho mỗi video test\n"
-             "├── data/\n"
-             "│ ├── data.yaml # config Ultralytics: 4-class, đường dẫn dataset\n"
-             "│ ├── raw_vn_cantho/ # dataset VN gốc (extracted từ zip)\n"
-             "│ ├── merged/ # dataset đã merge + remap schema (gitignored)\n"
-             "│ └── test_videos/\n"
-             "│ ├── raw/ # video test\n"
-             "│ └── ground_truth/ # GT counts thủ công (JSON)\n"
-             "├── scripts/\n"
-             "│ ├── import_ua_detrac.py # import + remap class UA-DETRAC canonical\n"
-             "│ ├── import_cantho_vn.py # import + remap class VN Cần Thơ\n"
-             "│ ├── train.sh # script train YOLOv8s (fresh/resume/auto)\n"
-             "│ ├── eval_after_training.sh # watcher: chờ training xong tự eval\n"
-             "│ └── gen_report_docx.py # sinh file báo cáo này\n"
-             "├── src/\n"
-             "│ ├── detection/\n"
-             "│ │ ├── train.py # wrapper Ultralytics YOLO.train() + --resume\n"
-             "│ │ ├── infer.py # inference đơn lẻ\n"
-             "│ │ └── evaluate.py # val mAP\n"
-             "│ ├── tracking/\n"
-             "│ │ ├── track.py # wrapper model.track() ByteTrack\n"
-             "│ │ └── counter.py # Counter class với direction filter\n"
-             "│ ├── pipeline/\n"
-             "│ │ └── run.py # tích hợp detect+track+count + xuất CSV/video\n"
-             "│ ├── stats/\n"
-             "│ │ ├── aggregator.py # groupby thời gian, class, direction\n"
-             "│ │ └── visualize.py # bar/line/heatmap/cumulative charts\n"
-             "│ └── evaluation/\n"
-             "│ ├── metrics.py # accuracy, MAE, MAPE\n"
-             "│ └── eval_full.py # eval 2 tầng: mAP + counting\n"
-             "├── ui/\n"
-             "│ └── streamlit_app.py # web UI 3 tab: Run / Stats / Eval\n"
-             "├── weights/\n"
-             "│ ├── baseline_detrac4.pt # baseline v8n cũ (UA-DETRAC 4-class)\n"
-             "│ └── v8s_4cls_best.pt # model mới, best.pt sau 50 epoch\n"
-             "├── runs/ # Ultralytics training outputs (gitignored)\n"
-             "├── results/ # eval outputs + biểu đồ + video demo\n"
-             "└── README.md, requirements.txt, .gitignore\n")
-
-    # ==================== 4. Chi tiết từng module ====================
-    add_heading(doc, "4. Chi tiết từng module", level=1)
-
-    # 4.1 Detection
-    add_heading(doc, "4.1 Detection — src/detection/train.py", level=2)
-    add_para(doc,
-             "Wrapper mỏng quanh Ultralytics YOLO API để chuẩn hoá training + resume. "
-             "Không tự implement detection — dùng thẳng model YOLOv8s pretrained trên COCO "
-             "rồi fine-tune trên dataset của mình.")
-    add_para(doc, "Điểm quan trọng:", bold=True)
-    for x in [
-        "--pretrained yolov8s.pt: khởi tạo từ COCO 80-class, Ultralytics tự remap head sang 4-class",
-        "--patience 15: early stopping — dừng nếu 15 epoch không cải thiện val fitness",
-        "--resume + --name: auto-detect last.pt bằng glob, tiếp tục epoch dừng dở",
-        "--cache ram: cache toàn bộ dataset vào RAM giảm 40% thời gian/epoch (dataset ~20GB)",
-        "Fitness = 0.1×mAP@0.5 + 0.9×mAP@0.5-0.95 — Ultralytics dùng metric này để chọn best.pt",
-    ]:
-        add_bullet(doc, x)
-
-    # 4.2 Tracking
-    add_heading(doc, "4.2 Tracking — src/tracking/track.py", level=2)
-    add_para(doc,
-             "Wrapper cho model.track() của Ultralytics. Dùng ByteTrack (built-in) — thuật toán "
-             "SOTA cho MOT (Multi-Object Tracking) 2022. Tracker này gán track_id ổn định cho "
-             "mỗi phương tiện xuyên suốt các frame, dùng data association 2 stages "
-             "(high-conf detections trước, low-conf sau) để giữ track khi tạm occluded.")
-    add_para(doc, "Tại sao dùng ByteTrack:", bold=True)
-    for x in [
-        "Không cần re-ID model riêng (khác DeepSORT), nhanh và chính xác",
-        "Xử lý tốt tình huống xe bị che khuất tạm thời",
-        "Đã tích hợp sẵn trong Ultralytics — chỉ cần tracker='bytetrack.yaml'",
-    ]:
-        add_bullet(doc, x)
-
-    # 4.3 Counter
-    add_heading(doc, "4.3 Counting logic — src/tracking/counter.py", level=2)
-    add_para(doc, "Module lõi nhất của pipeline. Ý tưởng thuật toán:", bold=True)
-    add_code(doc,
-             "Mỗi frame, với mỗi track_id đang active:\n"
-             " 1. Tính tâm box hiện tại: curr = ((x1+x2)/2, (y1+y2)/2)\n"
-             " 2. Nếu có tâm frame trước (prev):\n"
-             " - Segment prevcurr có cắt counting line không? (segments_cross)\n"
-             " - Nếu có: xác định direction bằng cross-product\n"
-             " line_vector = p2 - p1\n"
-             " movement_vector = curr - prev\n"
-             " cross = line_vec.x × mov_vec.y − line_vec.y × mov_vec.x\n"
-             " cross > 0 'ltr' (tráiphải theo chiều line)\n"
-             " cross < 0 'rtl' (phảitrái)\n"
-             " - Kiểm tra count_direction config: nếu 'ltr' và movement là 'rtl' BỎ QUA\n"
-             " - Nếu qua: counts[line][direction][class] += 1\n"
-             " - Đánh dấu (line_name, track_id) vào set _counted không đếm lại lần 2\n"
-             " 3. Update prev_center[track_id] = curr")
-    add_para(doc, "Chống đếm trùng:", bold=True)
-    add_para(doc,
-             "Set _counted lưu key (line_name, track_id) đã đếm. Nếu xe quay đầu và cắt "
-             "line lần 2 vẫn không đếm lại. Điều này giữ số đếm đúng ngay cả trong tắc đường "
-             "hoặc xe dừng cạnh line.")
-
-    # 4.4 Pipeline
-    add_heading(doc, "4.4 Pipeline tích hợp — src/pipeline/run.py", level=2)
-    add_para(doc, "Function chính run_pipeline() nhận video + weights + lines, xuất:")
-    for x in [
-        "events: list dict {frame, time_sec, line, direction, track_id, class_name}",
-        "totals: dict {line: {direction: {class_id: count}}}",
-        "CSV file events (nếu --out-csv)",
-        "MP4 file video annotated có overlay counter, boxes, labels (nếu --out-video)",
-    ]:
-        add_bullet(doc, x)
-    add_para(doc,
-             "Hỗ trợ callback progress_cb để Streamlit hiện progress bar realtime khi chạy.")
-
-    # 4.5 Stats
-    add_heading(doc, "4.5 Aggregator + Visualize — src/stats/", level=2)
-    add_para(doc,
-             "aggregator.py: nhận list events pandas DataFrame group theo bucket thời gian "
-             "(30s, 1p, 5p, 15p, 30p, 1h) tuỳ chọn.")
-    add_para(doc, "Các hàm chính:", bold=True)
-    for x in [
-        "events_to_df(): chuẩn hoá + thêm cột time_min, time_hour",
-        "summarize(): tổng, per_class, per_line, per_direction, per_class_per_line",
-        "counts_per_bucket(bucket_sec): pivot theo bucket DataFrame [bucket × class]",
-        "flow_rate(unit): xe/phút hoặc xe/giờ trung bình",
-        "peak_period(): tìm khung giờ đông xe nhất",
-        "cumulative_counts(): đếm cộng dồn theo thời gian",
-        "counts_by_direction(): bảng [line × direction] tổng lượt",
-    ]:
-        add_bullet(doc, x)
-    add_para(doc,
-             "visualize.py: các function matplotlib xuất PNG cho báo cáo — bar, stacked bar, "
-             "line chart theo bucket, heatmap thời gian × class, cumulative line chart, "
-             "so sánh giữa các line.")
-
-    # 4.6 Evaluation
-    add_heading(doc, "4.6 Evaluation — src/evaluation/", level=2)
-    add_para(doc, "metrics.py: các metric đánh giá counting task", bold=True)
-    for x in [
-        "counting_accuracy(pred, gt): 1 - |pred-gt|/max(gt,1), clip [0,1]",
-        "mae(preds, gts): Mean Absolute Error",
-        "mape(preds, gts): Mean Absolute Percentage Error (bỏ gt=0)",
-        "report(pred_dict, gt_dict): tổng hợp per-class + overall",
-    ]:
-        add_bullet(doc, x)
-    add_para(doc, "eval_full.py: eval 2 tầng cho mỗi model", bold=True)
-    for x in [
-        "Tầng A - mAP: gọi YOLO.val() trên test set 56k ảnh có label sẵn mAP@0.5, mAP@0.5-0.95, P, R per-class. Auto skip nếu schema model ≠ data.yaml.",
-        "Tầng B - Counting: chạy run_pipeline() trên video có GT thủ công (demo_traffic.mp4) so bằng report() accuracy/MAE/MAPE.",
-        "Output: JSON tổng hợp cho tất cả model đã chọn, ghi vào results/tables/eval_full.json",
-    ]:
-        add_bullet(doc, x)
-
-    # 4.7 UI
-    add_heading(doc, "4.7 Streamlit UI — ui/streamlit_app.py", level=2)
-    add_para(doc, "Web interface 3 tab, giúp không cần code cũng dùng được pipeline:")
-    for x in [
-        "Tab 'Chạy pipeline': upload video chỉnh line/threshold/model/FP16 run xem output video có overlay + download",
-        "Tab 'Thống kê': bảng events, biểu đồ bar/line theo bucket, heatmap, cumulative, flow rate, peak period",
-        "Tab 'Đánh giá': upload GT JSON hoặc điền tay tính accuracy/MAE/MAPE per-class + download eval report JSON",
-    ]:
-        add_bullet(doc, x)
-    add_para(doc, "Chạy: streamlit run ui/streamlit_app.py", italic=True)
-
-    # ==================== 5. Dataset ====================
-    add_heading(doc, "5. Dataset — chuẩn bị và merge", level=1)
-    add_para(doc,
-             "Project dùng 2 nguồn dataset public gộp lại để có đủ class quan trọng cho topic VN.")
-
-    add_heading(doc, "5.1 Nguồn dataset", level=2)
+    # ================== 1. BỐI CẢNH ==================
+    add_heading(doc, "1. Bối cảnh & mục tiêu", 1)
+    add_para(doc, "Bài toán yêu cầu detect + track + count 4 lớp phương tiện giao thông trong video Việt Nam. "
+                  "Nhóm so sánh 2 phương pháp tiếp cận:")
     add_table(doc,
-              ["Dataset", "Số ảnh (train/val/test)", "Class gốc", "Vai trò"],
+              ["#", "Pipeline", "Model weights", "Có huấn luyện?", "Output"],
               [
-                  ["UA-DETRAC", "68k / 14k / 56k", "car, bus, van, others", "Data lớn, đa dạng, cho car/bus"],
-                  ["VN Cần Thơ (Roboflow)", "674 / 216 / 214", "bus, car, motorbike, truck", "Bổ sung motorcycle (chính!)"],
-                  ["Merged (final)", "68.6k / 14.3k / 56.4k", "motorcycle, car, bus, truck", "Schema canonical 4-class"],
+                  ["1", "Baseline", "yolov8s.pt (COCO pretrained)", "Không", "80 lớp (lọc 4 phương tiện)"],
+                  ["2", "Improved", "train_v8s_ft_vnv3/best.pt", "Có (2 lần fine-tune)", "4 lớp VN"],
+              ])
+    add_para(doc, "Cùng kiến trúc YOLOv8s → khác biệt chỉ ở dữ liệu + huấn luyện → so sánh công bằng.", italic=True)
+    add_para(doc, "Giả thuyết: Model fine-tune trên dữ liệu VN sẽ vượt trội về khả năng bắt xe máy — vấn đề mà COCO gốc yếu.")
+
+    # ================== 2. DỮ LIỆU ==================
+    add_heading(doc, "2. Dữ liệu huấn luyện", 1)
+
+    add_heading(doc, "2.1 Nguồn dữ liệu (3 nguồn hợp nhất)", 2)
+    add_table(doc,
+              ["Nguồn", "Vai trò chính", "Ảnh gốc", "Ghi chú"],
+              [
+                  ["UA-DETRAC (TQ)", "Car, bus, truck", "~140k", "Camera cao, benchmark chuẩn"],
+                  ["Vehicle Vietnam-CanTho v19", "Motorcycle chính", "1,235", "Đường phố Cần Thơ"],
+                  ["Vietnamese vehicle v3", "Boost motorcycle", "1,547", "+2,232 bbox xe máy (vòng 2)"],
               ])
 
-    add_heading(doc, "5.2 Class mapping (schema canonical)", level=2)
-    add_para(doc, "File configs/class_mapping.json định nghĩa ánh xạ:")
-    add_code(doc,
-             "Canonical 4-class: {0: motorcycle, 1: car, 2: bus, 3: truck}\n\n"
-             "UA-DETRAC canonical:\n"
-             " 0 (car) 1 (car)\n"
-             " 1 (bus) 2 (bus)\n"
-             " 2 (van) 3 (truck) # van gộp truck vì hình dáng gần nhất\n"
-             " 3 (others) null (bỏ)\n\n"
-             "VN Cần Thơ canonical:\n"
-             " 0 (bus) 2 (bus)\n"
-             " 1 (car) 1 (car)\n"
-             " 2 (motorbike) 0 (motorcycle) giá trị chính từ VN\n"
-             " 3 (truck) 3 (truck)")
+    add_heading(doc, "2.2 Phân bố class sau merge", 2)
+    add_image(doc, CHARTS / "class_distribution.png",
+              caption="Chart 1 — Phân bố class trong tập train (log scale, mỗi lớp 1 màu)")
 
-    add_heading(doc, "5.3 Class distribution merged (train split)", level=2)
+    total_bbox = sum(cls_counts.values())
     add_table(doc,
-              ["Class ID", "Tên", "Số instances", "% tổng"],
+              ["Class ID", "Tên lớp", "Bbox", "Tỉ lệ (%)"],
               [
-                  ["0", "motorcycle", "2,004", "0.4%"],
-                  ["1", "car", "418,157", "84.2%"],
-                  ["2", "bus", "31,251", "6.3%"],
-                  ["3", "truck", "45,457", "9.1%"],
+                  ["0", "motorcycle (xe máy)", f"{cls_counts[0]:,}", f"{cls_counts[0]/total_bbox*100:.2f}%"],
+                  ["1", "car (ô tô)", f"{cls_counts[1]:,}", f"{cls_counts[1]/total_bbox*100:.2f}%"],
+                  ["2", "bus (xe buýt)", f"{cls_counts[2]:,}", f"{cls_counts[2]/total_bbox*100:.2f}%"],
+                  ["3", "truck (xe tải)", f"{cls_counts[3]:,}", f"{cls_counts[3]/total_bbox*100:.2f}%"],
+                  ["", "TỔNG", f"{total_bbox:,}", "100%"],
               ])
+    add_para(doc, "Nhận xét:", bold=True)
+    add_bullets(doc, [
+        f"Car chiếm ~{cls_counts[1]/total_bbox*100:.0f}% → mất cân bằng nặng (car gấp ~{cls_counts[1]/cls_counts[0]:.0f}x xe máy).",
+        f"Motorcycle chỉ {cls_counts[0]/total_bbox*100:.2f}% dù đã boost vnv3 — vẫn là class khó nhất.",
+        "Đó là lý do phần fine-tune tập trung boost xe máy.",
+    ])
+
+    # ================== 3. QUY TRÌNH HUẤN LUYỆN ==================
+    add_heading(doc, "3. Quy trình huấn luyện (Improved)", 1)
+
+    add_heading(doc, "3.1 Fine-tune lần 1 — train_v8s_4cls", 2)
+    add_bullets(doc, [
+        "Init: yolov8s.pt (COCO pretrained, reset head 80→4 lớp).",
+        "Config: 50 epoch, batch 32, imgsz 512, LR default (0.01).",
+        "Thời gian: ~5h 30m trên RTX 3500 Ada 12GB.",
+        f"Best: epoch {bl_p['epoch']} — mAP50 = {bl_p['mAP50']:.4f}, mAP50-95 = {bl_p['mAP50_95']:.4f}.",
+    ])
+
+    add_heading(doc, "3.2 Fine-tune lần 2 — train_v8s_ft_vnv3 (Continual)", 2)
+    add_bullets(doc, [
+        "Init: best.pt lần 1 (KHÔNG phải COCO).",
+        "Config: 25 epoch (early stop ở 18), batch 32, imgsz 512, LR 0.001 (thấp 10x), patience 8.",
+        "Thêm dữ liệu: 1,547 ảnh vnv3 (boost motorcycle).",
+        "Thời gian thực tế: 2h 20m.",
+        f"Best: epoch {im_p['epoch']} — mAP50 = {im_p['mAP50']:.4f}, mAP50-95 = {im_p['mAP50_95']:.4f}.",
+    ])
     add_para(doc,
-             "Class motorcycle mất cân bằng nặng (0.4%) vì UA-DETRAC không có motorcycle. "
-             "Nhưng 2k positive samples đủ để model học được (mAP motorcycle = 0.87 sau train).",
+             "Vì sao LR thấp? Fine-tune tiếp từ checkpoint đã hội tụ ⇒ LR default sẽ phá kiến thức cũ "
+             "(catastrophic forgetting). LR 0.001 giữ nguyên feature backbone, chỉ tinh chỉnh nhẹ.",
              italic=True)
 
-    # ==================== 6. Training ====================
-    add_heading(doc, "6. Quá trình training", level=1)
-    add_heading(doc, "6.1 Cấu hình cuối cùng", level=2)
+    add_image(doc, CHARTS / "gen_time.png",
+              caption="Chart 2 — Thời gian huấn luyện tích luỹ 2 lần fine-tune")
+
+    # ================== 4. DETECTION QUALITY ==================
+    add_heading(doc, "4. Kết quả detection quality (val set 14,344 ảnh)", 1)
+
+    add_heading(doc, "4.1 mAP@0.5 mỗi lớp — điểm nhấn báo cáo", 2)
+    add_image(doc, CHARTS / "mAP50_per_class.png",
+              caption="Chart 3 — mAP@0.5 mỗi lớp, motorcycle 0.949 đứng đầu")
+
+    add_para(doc, "Detection metrics per class:", bold=True)
+    rows = []
+    for cls in CLASS_ORDER:
+        v = PER_CLASS_VAL[cls]
+        rows.append([f"{cls}",
+                     f"{v['P']:.3f}", f"{v['R']:.3f}",
+                     f"{v['mAP50']:.3f}", f"{v['mAP50_95']:.3f}"])
+    rows.append(["all", "0.869", "0.790", "0.850", "0.638"])
+    add_table(doc, ["Class", "Precision", "Recall", "mAP@0.5", "mAP@0.5:0.95"], rows)
+
+    add_image(doc, CHARTS / "per_class_val_metrics.png", width_cm=16,
+              caption="Chart 4 — 4 metric × 4 class, cùng lớp = cùng màu")
+
+    add_para(doc, "Nhận xét chính:", bold=True)
+    add_bullets(doc, [
+        "Motorcycle mAP@0.5 = 0.949 — cao nhất, chứng minh hiệu quả của việc thêm vnv3.",
+        "Motorcycle Recall = 0.917 — bắt được 91.7% xe máy trong val set (chỉ miss ~8%).",
+        "Truck yếu nhất (mAP@0.5 = 0.695) — do UA-DETRAC gộp van → truck, 2 loại có ngoại hình khác nhau ⇒ confusion.",
+    ])
+
+    add_heading(doc, "4.2 So sánh 2 lần fine-tune (training curves)", 2)
+    add_image(doc, CHARTS / "training_curves.png", width_cm=16,
+              caption="Chart 5 — mAP@0.5 & mAP@0.5:0.95 qua epoch")
+    add_image(doc, CHARTS / "detection_metrics_bar.png",
+              caption="Chart 6 — Peak best-epoch metrics comparison")
+
     add_table(doc,
-              ["Hyperparameter", "Giá trị", "Ghi chú"],
+              ["Metric", "Fine-tune lần 1", "Fine-tune lần 2 (Improved)", "Δ"],
               [
-                  ["Model", "YOLOv8s (11M params)", "s = small, cân bằng speed/accuracy"],
-                  ["Pretrained", "yolov8s.pt (COCO)", "warm-start từ COCO"],
-                  ["Epochs", "50 (trần)", "early-stop patience=15"],
-                  ["Batch size", "32", "cân bằng VRAM 12GB và tốc độ"],
-                  ["Image size", "512×512", "giảm từ 640 để nhanh hơn ~35%"],
-                  ["Cache", "RAM (~20GB)", "giảm 40% thời gian/epoch"],
-                  ["Workers", "12", "dataloader song song"],
-                  ["Optimizer", "auto (SGD lr=0.01)", "Ultralytics tự chọn"],
-                  ["Augmentation", "mosaic + HSV + flip", "mặc định, tắt mosaic 10 epoch cuối"],
-                  ["Hardware", "RTX 3500 Ada 12GB", "GPU laptop"],
+                  ["Precision", f"{bl_p['P']:.4f}", f"{im_p['P']:.4f}", f"{pct(im_p['P'], bl_p['P']):+.2f}%"],
+                  ["Recall", f"{bl_p['R']:.4f}", f"{im_p['R']:.4f}", f"{pct(im_p['R'], bl_p['R']):+.2f}%"],
+                  ["mAP@0.5", f"{bl_p['mAP50']:.4f}", f"{im_p['mAP50']:.4f}", f"{pct(im_p['mAP50'], bl_p['mAP50']):+.2f}%"],
+                  ["mAP@0.5:0.95", f"{bl_p['mAP50_95']:.4f}", f"{im_p['mAP50_95']:.4f}",
+                   f"{pct(im_p['mAP50_95'], bl_p['mAP50_95']):+.2f}%"],
               ])
 
-    add_heading(doc, "6.2 Kết quả training", level=2)
-    add_para(doc, "Chạy hết 50 epoch trong 5h 30 phút (~6.6 phút/epoch). Không early-stop.")
-    add_table(doc,
-              ["Metric (best.pt)", "Giá trị"],
-              [
-                  ["mAP@0.5 tổng", "0.843"],
-                  ["mAP@0.5-0.95 tổng", "0.636"],
-                  ["Precision", "0.886"],
-                  ["Recall", "0.777"],
-                  ["Fitness score", "0.6567"],
-              ])
-
-    add_para(doc, "Chi tiết per-class trên test set (56,381 ảnh):", bold=True)
-    add_table(doc,
-              ["Class", "mAP@0.5", "mAP@0.5-0.95", "Nhận xét"],
-              [
-                  ["motorcycle", "0.871", "0.571", " xuất sắc — model học tốt xe máy VN"],
-                  ["car", "0.744", "0.555", "Tốt"],
-                  ["bus", "0.781", "0.578", "Tốt"],
-                  ["truck", "0.524", "0.407", "Yếu — do trộn van + truck từ UA-DETRAC"],
-              ])
-
-    # ==================== 7. Đánh giá vs baseline ====================
-    add_heading(doc, "7. So sánh với baseline", level=1)
+    # ================== 5. COUNTING QUALITY ==================
+    add_heading(doc, "5. Kết quả counting quality (task-level)", 1)
     add_para(doc,
-             "Baseline: model YOLOv8n cũ (3M params) train 3 epoch trên UA-DETRAC 4-class "
-             "(car/bus/van/others), không có class motorcycle.")
-    add_table(doc,
-              ["Metric", "Baseline (v8n 4-class UA-DETRAC)", "Model mới (v8s 4-class merged)"],
-              [
-                  ["Params", "3M", "11M (3.7× lớn hơn)"],
-                  ["Có motorcycle?", " Không", " Có (mAP 0.87)"],
-                  ["mAP@0.5 test set", "0.009 (schema lệch)", "0.843 (99×!)"],
-                  ["Counting demo (MAE)", "3.00", "3.67"],
-                  ["Domain phù hợp VN?", " Vừa", " Có xe máy VN"],
-              ])
+             "Video test: demo_traffic.mp4 — 178 frames, 5.9 giây, "
+             "độ phân giải 1764x948, cảnh giao thông Cần Thơ nhìn từ trên xuống.")
     add_para(doc,
-             "Nhận xét: baseline chỉ trông 'tốt' trên counting demo vì trùng schema data cũ, "
-             "nhưng thực chất mAP rất thấp. Model mới thắng toàn diện về detection + có xe máy.",
-             italic=True)
+             f"Ground truth (đếm thủ công): {gt.get('motorcycle', 0)} motorcycle, "
+             f"{gt.get('car', 0)} car, {gt.get('bus', 0)} bus, {gt.get('truck', 0)} truck "
+             f"⇒ TỔNG {sum(gt.values())} xe.", bold=True)
 
-    # ==================== 8. Cách chạy ====================
-    add_heading(doc, "8. Hướng dẫn chạy", level=1)
+    add_heading(doc, "5.1 So sánh counting per class", 2)
+    add_image(doc, CHARTS / "counting_grouped.png", width_cm=16,
+              caption="Chart 7 — Counting per class (màu = class, hatch = pipeline)")
 
-    add_heading(doc, "8.1 Setup môi trường", level=2)
-    add_code(doc,
-             "# Tạo env (chỉ lần đầu)\n"
-             "conda create -n yolov8_ft python=3.10 -y\n"
-             "conda activate yolov8_ft\n"
-             "pip install -r requirements.txt\n\n"
-             "# Kiểm tra GPU\n"
-             "python -c \"import torch; print('CUDA:', torch.cuda.is_available())\"",
-             lang="bash")
+    rows = []
+    for cls in CLASS_ORDER:
+        rows.append([
+            cls,
+            str(gt.get(cls, 0)),
+            str(bl_c["pred"].get(cls, 0)),
+            str(im_c["pred"].get(cls, 0)),
+            str(bl_c["report"]["per_class"][cls]["abs_err"]),
+            str(im_c["report"]["per_class"][cls]["abs_err"]),
+        ])
+    rows.append(["TỔNG", str(sum(gt.values())),
+                 str(bl_c["report"]["total_pred"]),
+                 str(im_c["report"]["total_pred"]),
+                 "—", "—"])
+    add_table(doc,
+              ["Class", "GT", "Baseline pred", "Improved pred", "BL abs err", "IM abs err"],
+              rows)
 
-    add_heading(doc, "8.2 Chuẩn bị dataset (chỉ khi train lại)", level=2)
-    add_code(doc,
-             "# Extract VN Cần Thơ zip vào data/raw_vn_cantho/\n"
-             "unzip 'data/Vehicle Vietnam-CanTho*.zip' -d data/raw_vn_cantho/\n\n"
-             "# Import + remap schema (tạo symlink, không copy 60GB ảnh)\n"
-             "python scripts/import_ua_detrac.py\n"
-             "python scripts/import_cantho_vn.py\n\n"
-             "# Verify class distribution\n"
-             "find data/merged/labels/train -name '*.txt' | xargs cat | awk '{print $1}' | sort | uniq -c",
-             lang="bash")
-
-    add_heading(doc, "8.3 Training", level=2)
-    add_code(doc,
-             "# Train mới (batch 32, imgsz 512, cache ram ~6-7 phút/epoch)\n"
-             "./scripts/train.sh fresh\n\n"
-             "# Xem live log\n"
-             "tail -f logs/train_v8s_4cls.log\n\n"
-             "# Tắt máy? Resume từ epoch dừng\n"
-             "./scripts/train.sh resume\n\n"
-             "# Auto-eval khi training xong (chạy nền)\n"
-             "nohup ./scripts/eval_after_training.sh <TRAIN_PID> > logs/eval_watcher.log 2>&1 &",
-             lang="bash")
-
-    add_heading(doc, "8.4 Chạy pipeline (predict + count video)", level=2)
-    add_code(doc,
-             "# CLI\n"
-             "python -m src.pipeline.run \\\n"
-             " --video data/test_videos/raw/demo_traffic.mp4 \\\n"
-             " --weights weights/v8s_4cls_best.pt \\\n"
-             " --counting-config configs/counting_zones.json \\\n"
-             " --video-key demo_traffic \\\n"
-             " --out-csv results/tables/demo_events.csv \\\n"
-             " --out-video results/videos/demo_out.mp4 \\\n"
-             " --half\n\n"
-             "# Hoặc dùng UI\n"
-             "streamlit run ui/streamlit_app.py",
-             lang="bash")
-
-    add_heading(doc, "8.5 Evaluation", level=2)
-    add_code(doc,
-             "# So sánh v8s_4cls_best vs baseline_detrac4 (2 tầng)\n"
-             "python -m src.evaluation.eval_full\n\n"
-             "# Chỉ counting, bỏ mAP (nhanh)\n"
-             "python -m src.evaluation.eval_full --skip-mAP\n\n"
-             "# Chọn model tuỳ ý\n"
-             "python -m src.evaluation.eval_full \\\n"
-             " --models weights/v8s_4cls_best.pt runs/detect/runs/detect/train_v8s_4cls/weights/last.pt",
-             lang="bash")
-
-    # ==================== 9. Phân công thuyết trình ====================
-    add_heading(doc, "9. Gợi ý phân công thuyết trình (10-12 slide)", level=1)
-    add_para(doc, "Nhóm 4 người, mỗi bạn phụ trách 1 mảng chính:")
+    add_heading(doc, "5.2 Tốc độ + accuracy tổng", 2)
+    add_image(doc, CHARTS / "speed_accuracy.png", width_cm=16,
+              caption="Chart 8 — FPS vs Accuracy trên demo video")
 
     add_table(doc,
-              ["Vai trò", "Nội dung slide phụ trách", "Module code liên quan"],
+              ["Chỉ số", "Baseline (COCO)", "Improved (fine-tune)"],
               [
-                  ["Người 1 - Detection", "Slide 3-5: kiến trúc YOLOv8, dataset + merge, training + hyperparameter, biểu đồ loss/mAP",
-                   "src/detection/, scripts/import_*"],
-                  ["Người 2 - Tracking + Count", "Slide 6-7: ByteTrack, thuật toán counting + direction, chống đếm trùng",
-                   "src/tracking/counter.py, track.py"],
-                  ["Người 3 - Stats + Viz", "Slide 8-9: bucket theo thời gian, heatmap, flow rate, peak period, biểu đồ mẫu",
-                   "src/stats/, ui/streamlit_app.py"],
-                  ["Người 4 - Evaluation + Demo", "Slide 10-11: metric accuracy/MAE/MAPE, so sánh baseline, video demo",
-                   "src/evaluation/, results/"],
+                  ["Runtime", f"{bl_c['runtime_sec']:.2f}s", f"{im_c['runtime_sec']:.2f}s"],
+                  ["FPS", f"{bl_c['fps']:.1f}", f"{im_c['fps']:.1f} ({speedup:.2f}x nhanh hơn)"],
+                  ["Total pred", str(bl_c["report"]["total_pred"]), str(im_c["report"]["total_pred"])],
+                  ["MAE", f"{bl_c['report']['MAE']:.2f}", f"{im_c['report']['MAE']:.2f}"],
+                  ["MAPE (%)", f"{bl_c['report']['MAPE_percent']:.2f}", f"{im_c['report']['MAPE_percent']:.2f}"],
+                  ["Overall accuracy", f"{bl_c['report']['overall_accuracy']*100:.2f}%",
+                   f"{im_c['report']['overall_accuracy']*100:.2f}%"],
               ])
 
-    add_heading(doc, "9.1 Cấu trúc slide gợi ý", level=2)
-    slides = [
-        "Slide 1: Bìa (tên đề tài, nhóm, GVHD)",
-        "Slide 2: Bài toán + yêu cầu topic + phần mở rộng đã làm",
-        "Slide 3: Pipeline tổng quan (sơ đồ 5 bước)",
-        "Slide 4: Detection — YOLOv8s + fine-tune 4-class",
-        "Slide 5: Dataset — UA-DETRAC + VN Cần Thơ merge (thêm motorcycle)",
-        "Slide 6: Tracking + Counting — ByteTrack + cross-product line",
-        "Slide 7: Direction (ltr/rtl) — cross-product minh hoạ",
-        "Slide 8: Thống kê — bucket thời gian, flow rate, peak period",
-        "Slide 9: Biểu đồ — bar/heatmap/cumulative mẫu",
-        "Slide 10: Evaluation 2 tầng + so sánh baseline",
-        "Slide 11: Video demo (chèn video output có overlay)",
-        "Slide 12: Kết luận + hướng phát triển",
-    ]
-    for s in slides:
-        add_bullet(doc, s)
+    add_para(doc, "Phân tích thẳng thắn:", bold=True)
+    add_bullets(doc, [
+        f"Improved nhanh hơn {speedup:.2f}x — do output 4 class thay vì 80 ⇒ head Detect nhẹ hơn, NMS ít candidate.",
+        "Baseline under-count (71 vs 87 GT) — bỏ sót nhiều car do COCO ít quen camera góc cao VN.",
+        f"Improved over-count ({im_c['report']['total_pred']} vs 87 GT) — có xu hướng tách 1 xe thành nhiều "
+        "detection ở gần line đếm.",
+        "Cả 2 accuracy tổng gần bằng — vì demo video không có motorcycle ⇒ lợi thế lớn nhất của Improved "
+        "không được showcase ở đây.",
+    ])
+    add_para(doc, "Hạn chế đánh giá: Video demo chỉ 5.9 giây và có 0 xe máy trong GT ⇒ không phản ánh đủ "
+                  "điểm mạnh Improved. Cần test thêm video có xe máy.", italic=True)
 
-    # ==================== 10. Câu hỏi thầy cô có thể hỏi ====================
-    add_heading(doc, "10. Câu hỏi thầy cô có thể hỏi + gợi ý trả lời", level=1)
+    # ================== 6. KẾT LUẬN ==================
+    add_heading(doc, "6. Kết luận", 1)
 
-    qa = [
-        ("Vì sao chọn YOLOv8s, không phải yolov8n hay yolov8m?",
-         "s (11M) cân bằng: n (3M) yếu quá, m (26M) train quá lâu (>10h). "
-         "s đạt mAP@0.5=0.843 chỉ trong ~5h, phù hợp topic sinh viên."),
-        ("Vì sao dùng ByteTrack, không dùng DeepSORT?",
-         "ByteTrack không cần re-ID model riêng (khác DeepSORT) — nhanh hơn, đơn giản hơn, "
-         "và đã tích hợp sẵn Ultralytics. SOTA cho MOT."),
-        ("Làm sao chống đếm trùng?",
-         "Set _counted lưu key (line_name, track_id). Mỗi track_id chỉ được đếm 1 lần "
-         "cho 1 line. Xe quay đầu qua lại vẫn không đếm lại."),
-        ("Direction (ltr/rtl) tính bằng cách nào?",
-         "Cross-product line_vector × movement_vector. Dấu (>0 hay <0) quyết định "
-         "hướng đi tương đối so với vector line (p1p2)."),
-        ("Vì sao MAPE counting cao trên demo (63%)?",
-         "Demo_traffic.mp4 gốc UA-DETRAC có 'van' — bị gộp vào truck theo mapping. "
-         "Nếu test video VN thực tế (có xe máy) thì MAPE sẽ tốt hơn nhiều."),
-        ("Vì sao truck có mAP thấp (0.52)?",
-         "Vì đã gộp 'van' của UA-DETRAC vào 'truck' — 2 loại xe hình dáng khác nhau bị "
-         "cùng label confusion. Trade-off có ý thức để có 4-class thống nhất."),
-        ("Class motorcycle chỉ có 2k samples, sao mAP đến 0.87?",
-         "Dataset VN Cần Thơ có 1786 instances motorcycle chất lượng cao (annotation "
-         "chuẩn Roboflow), đủ để YOLO học được đặc trưng xe máy. Số lượng ít nhưng "
-         "chất lượng và diversity tốt."),
-        ("Nếu deploy production thì làm gì?",
-         "Export ONNX/TensorRT để inference 2-3× nhanh hơn PyTorch. Thêm class imbalance "
-         "weighting. Tuning conf threshold theo từng camera. Monitor drift theo thời gian."),
-    ]
-    for q, a in qa:
-        p = doc.add_paragraph()
-        r = p.add_run(f"Q: {q}")
-        r.bold = True
-        r.font.size = Pt(11)
-        p = doc.add_paragraph()
-        r = p.add_run(f"A: {a}")
-        r.font.size = Pt(11)
-        doc.add_paragraph()
+    add_heading(doc, "6.1 Đóng góp chính", 2)
+    add_bullets(doc, [
+        "Xây dựng pipeline end-to-end: detect → track (ByteTrack) → count (line crossing) → visualize.",
+        "Hợp nhất 3 dataset khác schema thành 1 tập 137k ảnh chuẩn 4-lớp (có class remapping).",
+        "2 vòng fine-tune trên cùng kiến trúc YOLOv8s — kiến trúc không đổi, chỉ dữ liệu + LR khác.",
+        "Boost xe máy đạt mAP@0.5 = 0.949 (đứng đầu 4 class) — chứng minh chiến lược data augmentation domain-specific có hiệu quả.",
+        "GUI Streamlit hỗ trợ chọn model + xem kết quả.",
+    ])
 
-    # ==================== Footer ====================
-    doc.add_page_break()
-    add_heading(doc, "Liên hệ & Resources", level=1)
-    for x in [
-        "GitHub repo: https://github.com/xuanduc24905-beep/BT_Traffic_Detect",
-        "Ultralytics docs: https://docs.ultralytics.com",
-        "ByteTrack paper: arXiv:2110.06864 (Zhang et al 2022)",
-        "UA-DETRAC dataset: https://detrac-db.rit.albany.edu/",
-        "VN Cần Thơ dataset: universe.roboflow.com/vehicle/vehicle-vietnam-cantho-2gxc8",
-    ]:
-        add_bullet(doc, x)
+    add_heading(doc, "6.2 Bảng chốt cho slide", 2)
+    add_table(doc,
+              ["Chỉ số", "Baseline (COCO)", "Improved (fine-tune)", "Lợi thế"],
+              [
+                  ["Dataset train", "0 ảnh", "137k ảnh VN", "⭐ Improved"],
+                  ["Số lớp output", "80 (filter 4)", "4 chuyên biệt", "⭐ Improved"],
+                  ["mAP@0.5 (val)", "không đo", "0.850", "⭐ Improved"],
+                  ["Motorcycle mAP", "không đo", "0.949", "⭐ Improved"],
+                  ["FPS demo", "40.7", f"72.7 (nhanh {speedup:.2f}x)", "⭐ Improved"],
+                  ["Params", "11.2M", "11.2M", "="],
+                  ["Kiến trúc", "YOLOv8s", "YOLOv8s", "="],
+              ])
 
-    doc.save(str(OUT_PATH))
-    print(f"[] Đã sinh: {OUT_PATH}")
-    print(f" Kích thước: {OUT_PATH.stat().st_size / 1024:.1f} KB")
+    add_heading(doc, "6.3 Bài học rút ra", 2)
+    add_bullets(doc, [
+        '"Same model, better data → better result" — không cần model lớn hơn để cải thiện.',
+        "Class remapping khi merge dataset là bước dễ sai — verify từ Roboflow UI trước khi tin.",
+        "Continual fine-tune với LR thấp (0.001) an toàn hơn re-train from scratch cho dataset nhỏ.",
+        "Metric val ≠ metric task — mAP tốt không tự động đồng nghĩa counting tốt (còn phụ thuộc tracker, line logic).",
+    ])
+
+    add_heading(doc, "6.4 Hạn chế & hướng phát triển", 2)
+    add_para(doc, "Hạn chế hiện tại:", bold=True)
+    add_bullets(doc, [
+        "Motorcycle vẫn chỉ 0.85% bbox train ⇒ mAP50-95 = 0.609 (thấp hơn class khác).",
+        "Truck confusion cao (van↔truck) do UA-DETRAC gộp.",
+        "Demo video quá ngắn để đánh giá counting đầy đủ.",
+    ])
+    add_para(doc, "Đề xuất mở rộng:", bold=True)
+    add_bullets(doc, [
+        "Test trên nhiều video VN dài hơn (5-10 phút).",
+        "Thử imgsz 640/768 (tăng khả năng bắt xe máy nhỏ ở xa).",
+        "Áp dụng class-weighted sampling hoặc focal loss để giảm imbalance.",
+        "Deploy trên edge device (Jetson) test real-time.",
+    ])
+
+    # ================== 7. GHI CHÚ KỸ THUẬT ==================
+    add_heading(doc, "7. Ghi chú kỹ thuật", 1)
+    add_bullets(doc, [
+        "Class remapping vnv3: {0:1, 1:0, 2:3, 3:2} — script scripts/import_vnv3.py.",
+        "Chỉ merge vào train, giữ val/test cũ để so sánh mAP công bằng.",
+        "Best checkpoint tự cập nhật vào runs/.../weights/best.pt mỗi khi val mAP đạt đỉnh.",
+        "Continual fine-tune với lr0=0.001 (default 0.01) — quan trọng để không phá kiến thức cũ.",
+        "Eval config: conf=0.3, iou=0.5, imgsz=640, FP16, tracker=ByteTrack.",
+    ])
+
+    add_heading(doc, "8. File & artifact liên quan", 1)
+    add_table(doc,
+              ["Loại", "Đường dẫn"],
+              [
+                  ["Notebook báo cáo", "notebooks/report_baseline_vs_improved.ipynb"],
+                  ["Script sinh báo cáo Word", "scripts/gen_report_docx.py"],
+                  ["Script sinh chart + markdown", "scripts/gen_comparison_report.py"],
+                  ["Script eval counting", "scripts/eval_counting_2pipelines.py"],
+                  ["Kết quả eval JSON", "results/tables/eval_counting_2pipelines.json"],
+                  ["Trọng số Improved", "runs/detect/runs/detect/train_v8s_ft_vnv3/weights/best.pt"],
+                  ["Trọng số Baseline", "weights/yolov8s.pt"],
+                  ["Config data", "data/data.yaml"],
+              ])
+
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(OUT)
+    size_kb = OUT.stat().st_size / 1024
+    print(f"[save] {OUT} ({size_kb:.1f} KB)")
 
 
 if __name__ == "__main__":

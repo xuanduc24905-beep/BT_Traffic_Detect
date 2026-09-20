@@ -1,8 +1,9 @@
 """
 CHU DE 10: DEM VA PHAN LOAI PHUONG TIEN GIAO THONG (STARTER CODE)
 
-File goc do giao vien cung cap. Day la baseline don gian dung yolov8n.pt
+File goc do giao vien cung cap. Day la baseline don gian dung yolov8s.pt
 COCO pretrained + line counting 1-line + counted_ids set chong dem trung.
+(Nhom dung v8s de fair so voi model fine-tune cung kien truc v8s.)
 
 Yeu cau: pip install ultralytics opencv-python matplotlib
 
@@ -23,7 +24,7 @@ import matplotlib.pyplot as plt
 VEHICLE_CLASSES = {"car", "motorcycle", "bus", "truck", "bicycle"}
 
 
-def main(video_path, model_path="yolov8n.pt", line_y=400,
+def main(video_path, model_path="yolov8s.pt", line_y=400,
          out_video=None, show_window=True):
     """Baseline goc — chi 1 line ngang tai y=line_y, khong direction, khong log time."""
     model = YOLO(model_path)
@@ -115,8 +116,8 @@ if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument("--video", default="data/test_videos/raw/demo_traffic.mp4")
-    ap.add_argument("--model", default="yolov8n.pt",
-                    help="mac dinh yolov8n.pt COCO pretrained (baseline goc)")
+    ap.add_argument("--model", default="yolov8s.pt",
+                    help="mac dinh yolov8s.pt COCO pretrained (baseline fair vs v8s fine-tune)")
     ap.add_argument("--line-y", type=int, default=474,
                     help="Y ngang tai giua frame 948px cao")
     ap.add_argument("--out-video", default="baseline/baseline_out.mp4")

@@ -1,0 +1,94 @@
+{
+  "gt": {
+    "motorcycle": 0,
+    "car": 80,
+    "bus": 1,
+    "truck": 6
+  },
+  "baseline": {
+    "weights": "weights/yolov8s.pt",
+    "pred": {
+      "car": 67,
+      "truck": 4
+    },
+    "runtime_sec": 4.38,
+    "frames": 178,
+    "fps": 40.7,
+    "report": {
+      "per_class": {
+        "bus": {
+          "pred": 0,
+          "gt": 1,
+          "abs_err": 1,
+          "accuracy": 0.0
+        },
+        "car": {
+          "pred": 67,
+          "gt": 80,
+          "abs_err": 13,
+          "accuracy": 0.8375
+        },
+        "motorcycle": {
+          "pred": 0,
+          "gt": 0,
+          "abs_err": 0,
+          "accuracy": 1.0
+        },
+        "truck": {
+          "pred": 4,
+          "gt": 6,
+          "abs_err": 2,
+          "accuracy": 0.6666666666666667
+        }
+      },
+      "total_pred": 71,
+      "total_gt": 87,
+      "MAE": 4.0,
+      "MAPE_percent": 49.861111111111114,
+      "overall_accuracy": 0.8160919540229885
+    }
+  },
+  "improved": {
+    "weights": "runs/detect/runs/detect/train_v8s_ft_vnv3/weights/best.pt",
+    "pred": {
+      "car": 99,
+      "truck": 5
+    },
+    "runtime_sec": 2.45,
+    "frames": 178,
+    "fps": 72.7,
+    "report": {
+      "per_class": {
+        "bus": {
+          "pred": 0,
+          "gt": 1,
+          "abs_err": 1,
+          "accuracy": 0.0
+        },
+        "car": {
+          "pred": 99,
+          "gt": 80,
+          "abs_err": 19,
+          "accuracy": 0.7625
+        },
+        "motorcycle": {
+          "pred": 0,
+          "gt": 0,
+          "abs_err": 0,
+          "accuracy": 1.0
+        },
+        "truck": {
+          "pred": 5,
+          "gt": 6,
+          "abs_err": 1,
+          "accuracy": 0.8333333333333334
+        }
+      },
+      "total_pred": 104,
+      "total_gt": 87,
+      "MAE": 5.25,
+      "MAPE_percent": 46.80555555555555,
+      "overall_accuracy": 0.8045977011494253
+    }
+  }
+}

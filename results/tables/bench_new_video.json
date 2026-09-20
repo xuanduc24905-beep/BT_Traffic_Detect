@@ -1,0 +1,52 @@
+{
+  "baseline_yolov8s_coco": {
+    "name": "baseline_yolov8s_coco",
+    "weights": "weights/yolov8s.pt",
+    "n_frames": 488,
+    "runtime": 4.99,
+    "fps": 97.7,
+    "total_detections": 4338,
+    "det_per_frame": 8.89,
+    "per_class_total_bbox": {
+      "car": 3124,
+      "motorcycle": 869,
+      "truck": 344,
+      "bus": 1
+    },
+    "per_class_avg_conf": {
+      "car": 0.526,
+      "motorcycle": 0.419,
+      "truck": 0.356,
+      "bus": 0.274
+    },
+    "per_class_frames_present": {
+      "car": 488,
+      "truck": 265,
+      "motorcycle": 400,
+      "bus": 1
+    },
+    "pct_frames_with_motorcycle": 82.0
+  },
+  "improved_ft_vnv3": {
+    "name": "improved_ft_vnv3",
+    "weights": "runs/detect/runs/detect/train_v8s_ft_vnv3/weights/best.pt",
+    "n_frames": 488,
+    "runtime": 3.54,
+    "fps": 137.9,
+    "total_detections": 991,
+    "det_per_frame": 2.03,
+    "per_class_total_bbox": {
+      "motorcycle": 309,
+      "car": 682
+    },
+    "per_class_avg_conf": {
+      "motorcycle": 0.619,
+      "car": 0.671
+    },
+    "per_class_frames_present": {
+      "motorcycle": 214,
+      "car": 368
+    },
+    "pct_frames_with_motorcycle": 43.9
+  }
+}

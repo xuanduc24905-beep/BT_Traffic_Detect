@@ -8,6 +8,7 @@
 #
 # Sau khi in PID, có thể chạy kèm watcher eval:
 # nohup ./scripts/eval_after_training.sh <PID> > logs/eval_watcher.log 2>&1 &
+# tail -f logs/ft_vnv3.log
 
 set -e
 cd "$(dirname "$0")/.."

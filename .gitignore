@@ -1,5 +1,6 @@
 # Data — không commit
 data/raw/
+data/raw_vnv3/
 data/merged/
 data/raw_vn_cantho/
 data/test_videos/raw/
@@ -29,6 +30,11 @@ baseline/*.avi
 results/tables/streamlit_*.csv
 results/tables/compare_*.csv
 results/tables/smoke_*.csv
+results/tables/cmp_*.csv
+
+# Zip đã có folder đầy đủ commit rồi
+docs/comparison_report.zip
+slides_assets.zip
 
 # Python
 __pycache__/
