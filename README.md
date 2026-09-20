@@ -56,16 +56,7 @@ vn_traffic_ai/
 │   ├── bench_new_video.py             # benchmark detection thô trên video mới
 │   ├── eval_counting_2pipelines.py    # eval counting baseline vs improved
 │   ├── eval_tracking_proxy.py         # tracking proxy metrics (ID stability)
-│   ├── gen_comparison_report.py       # sinh chart + markdown report
-│   ├── gen_report_docx.py             # sinh file Word báo cáo
-│   ├── gen_report_notebook.py         # sinh notebook báo cáo
 │   └── train.sh
-├── slides_assets/                     # assets đóng gói cho từng slide PPT
-│   ├── slide_3_bai_toan/
-│   ├── slide_4_pipeline/
-│   ├── slide_5_yolov8_variants/
-│   ├── slide_6_data_finetune/
-│   └── slide_7_tracking_need/
 ├── src/
 │   ├── detection/                     # Người 1 — train.py, evaluate.py, infer.py
 │   ├── tracking/                      # Người 2 — track.py, counter.py
@@ -191,20 +182,14 @@ python baseline/10_traffic_counting.py \
     --no-show
 ```
 
-### Cách 4 — Sinh báo cáo tự động
+### Cách 4 — Sinh báo cáo eval
 
 ```bash
 # Chạy eval counting 2 pipeline
 python scripts/eval_counting_2pipelines.py
 
-# Sinh chart + báo cáo Markdown
-python scripts/gen_comparison_report.py
-
-# Sinh báo cáo Word
-python scripts/gen_report_docx.py
-
-# Sinh notebook báo cáo (đã embed chart)
-python scripts/gen_report_notebook.py
+# Tracking proxy metrics (ID stability)
+PYTHONPATH=. python scripts/eval_tracking_proxy.py
 ```
 
 Kết quả nằm ở [docs/comparison_report/](docs/comparison_report/).
@@ -297,11 +282,7 @@ python scripts/eval_counting_2pipelines.py
 # 3. Tracking proxy metrics (ID stability)
 PYTHONPATH=. python scripts/eval_tracking_proxy.py
 
-# 4. Sinh báo cáo Markdown + Word + chart
-python scripts/gen_comparison_report.py
-python scripts/gen_report_docx.py
-
-# 5. Chạy Streamlit dashboard (2 mode: single / compare)
+# 4. Chạy Streamlit dashboard (2 mode: single / compare)
 streamlit run ui/streamlit_app.py
 ```
 
@@ -379,7 +360,6 @@ streamlit run ui/streamlit_app.py
 | Báo cáo Markdown | [docs/comparison_report/comparison_report.md](docs/comparison_report/comparison_report.md) |
 | Báo cáo Word | [docs/comparison_report/BAO_CAO_BASELINE_VS_IMPROVED.docx](docs/comparison_report/BAO_CAO_BASELINE_VS_IMPROVED.docx) |
 | Notebook báo cáo (đã chạy sẵn) | [notebooks/report_baseline_vs_improved.ipynb](notebooks/report_baseline_vs_improved.ipynb) |
-| Assets cho PPT | [slides_assets/](slides_assets/) |
 | 8 chart PPT | [docs/comparison_report/charts/](docs/comparison_report/charts/) |
 | Best weights | `runs/detect/.../train_v8s_ft_vnv3/weights/best.pt` |
 
